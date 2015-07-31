@@ -470,7 +470,10 @@ class MainWindow(QtGui.QMainWindow, Ui_MainWindow):
                         else:
                             self.createDoubleSpin(n , subkey, value, section)
                     except ValueError:
-                        self.createLine(n , subkey, value, section)
+                        if value == 'true' or value == 'false':
+                            self.createTorF(n , subkey, value, section)
+                        else:
+                            self.createLine(n , subkey, value, section)
                 n = n + 1   # the n count is used so that each succesivly created input is created a factor n pixels lower than the previous
 
 
@@ -580,6 +583,41 @@ class MainWindow(QtGui.QMainWindow, Ui_MainWindow):
         self.label.setGeometry(QtCore.QRect(xLabel, sepInput*n, labelWidth, 15))
         self.label.setObjectName("label_n")
         self.label.setText(QtGui.QApplication.translate("MainWindow", subkey, None, QtGui.QApplication.UnicodeUTF8))
+
+
+  
+    def createTorF(self, n, subkey, value, section):
+        """
+        creates a new double spin for each input item that is a float. 
+        """
+        global xLabel, xInput, labelWidth, sepInput
+        objectName = subkey + 'TorF' + section
+        inputsLst.append(objectName)
+        tup = (section, objectName)
+        inputsTupLst.append(tup)
+        mycode = 'self.' + objectName + ' = QtGui.QComboBox(self.' + section +')'
+        exec mycode
+        mycode = 'self.' + objectName + '.addItem("true")'
+        exec mycode
+        mycode = 'self.' + objectName + '.addItem("false")'
+        exec mycode
+        mycode = 'self.' + objectName + '.setObjectName(objectName)'
+        exec mycode
+        mycode =  'self.' + objectName + '.setGeometry(QtCore.QRect(xInput, sepInput*n, 100, 22))'
+        exec mycode
+        mycode = 'self.label = QtGui.QLabel(self.' +section + ')'
+        exec mycode
+        if value == 'true':
+            mycode = 'self.' + objectName + '.setCurrentIndex(0)'
+            exec mycode
+        else:
+            mycode = 'self.' + objectName + '.setCurrentIndex(1)'
+            exec mycode
+            
+        #labels
+        self.label.setGeometry(QtCore.QRect(xLabel, sepInput*n, labelWidth, 15))
+        self.label.setObjectName("label_n")
+        self.label.setText(QtGui.QApplication.translate("MainWindow", subkey, None, QtGui.QApplication.UnicodeUTF8))
             
     def createBox(self, n, subkey, value, section):
         """
@@ -652,6 +690,18 @@ class MainWindow(QtGui.QMainWindow, Ui_MainWindow):
                 mycode = 'self.change(item[0], stripitem, self.' + item[1] + '.text())'
                 exec mycode
                 
+        for item in inputsTupLst:
+            stripitem = re.sub('TorF', '', item[1])
+            if stripitem != item[1]:
+                stripitem = re.sub(item[0], '', stripitem)
+                mycode = 'test = self.' + item[1] + '.currentIndex()'
+                exec mycode
+                if test == 0:
+                    mycode = 'self.change(item[0], stripitem, "true")'
+                    exec mycode
+                if test == 1:
+                    mycode = 'self.change(item[0], stripitem, "false")'
+                    exec mycode                
                 
         for item in inputsTupLst:
             stripitem = re.sub('Double', '', item[1])
