@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-import configparser, sys, os,  difflib, subprocess, threading
+import configparser, sys, os,  difflib, subprocess, threading, signal
 from datetime import *
 from PySide.QtGui import *
 from PySide.QtCore import *
@@ -10,8 +10,12 @@ from guifunctions import *
 from textdisplay import *
 from textdisplayhistory import *
 from defaultsave import *
-from scanboutwindow import *
+from scanbout import *
 from time import *
+from helpView import *
+
+from resize import *
+
 # pyxpad
 try:
   import cPickle as pickle
@@ -24,26 +28,58 @@ except:
 import re
 import string
 
-# Import Global Variables
-#archive = 'C:\Python34\Archive'
+# GLOBAL VARIABLES
 archive = '/hwdisks/data/bd512/sol1d-scans/5e8'
+loadpath = archive+ '/config/BOUT.inp'
+addTiming(loadpath)
+config = '/hwdisks/home/jh1479/python/Archive/config/config.ini'
+# lists to hold infomation for automatic creation of inputs
+inputsLst = []
+sectionLst = []
+inputsTupLst = []
+groupbox = []
 loadpath1= 'empty'
 run = 'false'
 cell =False
-parser = configparser.ConfigParser()
+with open(loadpath) as fp:
+    parser = configparser.ConfigParser()
+    parser.optionxform = str
+    parser.readfp(fp)
 parser2 = configparser.ConfigParser()
-parser.optionxform = str
+
 
 # Used to load data from the config folder as inital data
-loadpath = archive+ '/config/BOUT.inp'
-addTiming(loadpath)
+
+
+###################################################################
+#   APPRARANCE
+ # global leftBorder, verticalSeperation, topBorder, maxLength, boxWidth, horizontalSeperation, xLabel, xInput, labelWidth, sepInput
+with open(config) as fp:
+    position = configparser.ConfigParser()
+    position.optionxform = str
+    position.readfp(fp)
+leftBorder = int(position.get('appearance', 'leftborder'))
+verticalSeperation = int(position.get('appearance', 'verticalseperation'))
+topBorder = int(position.get('appearance', 'topborder'))
+maxLength = int(position.get('appearance', 'maxlength'))
+boxWidth = int(position.get('appearance', 'boxwidth'))
+horizontalSeperation = int(position.get('appearance', 'horizontalseperation'))
+xLabel = int(position.get('appearance', 'xlabel'))
+xInput = int(position.get('appearance', 'xinput'))
+labelWidth = int(position.get('appearance', 'labelwidth'))
+sepInput = int(position.get('appearance', 'sepinput'))
+########################################################################
+
 """
 NOTE: BOUT.inp can not be passed through config parser unless it has a heading
 for all sections. A default heading has been added at the start with addTiming if ther
 isn't already a heading. This has to be removed for any simulations because BOUT++
 will not run with an additional heading. The removeTiming function is used later in
-the program for this. 
+the program for this, in the runbout and scanbout programs. It should also be noted that
+the config parser doesn't like headings with numbers in them so in non sol1d control files
+the 2fluid heading will need changing. This will at some point be automated. 
 """
+
 parser.read(loadpath)
 
 ####################################### NEW CLASS #######################################
@@ -66,8 +102,10 @@ class Worker(QThread):
 
       def run(self):
           # proc runs the simulation
+          global proc
           proc = subprocess.Popen(['/hwdisks/home/jh1479/python/simulation/runboutSim.py', str(self.path), str(self.restart)],
-                                  shell = False, stdout = subprocess.PIPE, stderr = subprocess.PIPE)
+                                  shell = False, stdout = subprocess.PIPE, stderr = subprocess.PIPE, preexec_fn=os.setsid)
+            
           running = True
           while running == True:
               output = proc.stdout.readline()
@@ -93,7 +131,7 @@ class scanWorker(QThread):
 ##                """
 
       dataLine1 = Signal(str)
-      def __init__(self, path, key, subkey, initial, limit, increment, restart, outputStream, parent = None):
+      def __init__(self, path, key, subkey, initial, limit, increment, restart,key2, subkey2, initial2, limit2, increment2, incrementType, outputStream, parent = None):
               QThread.__init__(self, parent)
               self.path = path
               self.key = key
@@ -102,13 +140,20 @@ class scanWorker(QThread):
               self.limit = limit
               self.increment = increment
               self.restart = restart
+              self.key2 = key2
+              self.subkey2 = subkey2
+              self.initial2 = initial2
+              self.limit2  = limit2
+              self.increment2 = increment2
+              self.incrementType = incrementType
               self.outputStream = outputStream
               self.exiting = False
               window.tabWidget.setTabEnabled(2, True)
 
       def run(self):
           # proc runs the simulation
-          proc = subprocess.Popen(['/hwdisks/home/jh1479/python/simulation/scanboutSim.py', str(self.path), str(self.key), str(self.subkey), str(self.initial), str(self.limit), str(self.increment), str(self.restart)],
+
+          proc = subprocess.Popen(['/hwdisks/home/jh1479/python/simulation/scanboutSim.py', str(self.path), str(self.key), str(self.subkey), str(self.initial), str(self.limit), str(self.increment), str(self.restart), str(self.incrementType), str(self.initial2), str(self.limit2), str(self.key2),str(self.subkey2),str(self.increment2)],
                                   shell = False, stdout = subprocess.PIPE, stderr = subprocess.PIPE)
           running = True
           while running == True:
@@ -225,6 +270,7 @@ class WorkerCollect(QThread):
             why all the imports have to happen twice. This is slow so have a thread - also adds stability. Sleep functions
             mean prevents all commands from being executed simulateously which crahses the system. 
             """
+            window.textOutput.ensureCursorVisible()
             window.dataTable.clearContents()
             window.data = {}  # resets the data stored in pyxpad as multiple collects would cause a crash otherwise.
             os.chdir(self.path)
@@ -277,7 +323,8 @@ class MainWindow(QtGui.QMainWindow, Ui_MainWindow):
         self.data = {}
         self.commandInput.commandEntered.connect(self.commandEntered)
         self.commandButton.clicked.connect(self.commandEntered)
-        self.dataTable.cellChanged.connect(self.dataTableChanged)        
+        self.dataTable.cellChanged.connect(self.dataTableChanged)
+
         
         # import bits for Matplotlib_widget
         try:  
@@ -286,22 +333,35 @@ class MainWindow(QtGui.QMainWindow, Ui_MainWindow):
         except:
             raise
         self.tableWidget.setEditTriggers(QtGui.QAbstractItemView.NoEditTriggers)
+
+        
+        ###################################################
+        # bring up the help text viewer
+        self.actionHelp.triggered.connect(helpView.openHelp)
+                
+        ###################################################
+        # bring up the resize and reposition window
+        self.actionPositioning.triggered.connect(self.showResize)
         
         ###################################################
         # exit the program
         self.actionExit.triggered.connect(self.close)
-        
+
         ###################################################
         # compare
         self.actionCompare.triggered.connect(self.compareClicked)
 
+        ###################################################
+        # interupt simulation     
+        self.stopSimulation.clicked.connect(self.STOP)
+        self.actionStop_Simulation.triggered.connect(self.STOP)
+        
         ###################################################
         # load file history
         self.actionFileHistory.triggered.connect(self.FileHistoryClicked)
 
         ###################################################
         # run simulation
-
         self.pushButton_3.clicked.connect(self.changerun)
 
         ####################################################
@@ -312,12 +372,6 @@ class MainWindow(QtGui.QMainWindow, Ui_MainWindow):
         ####################################################
         # (file creation) Button 2
         self.pushButton_2.clicked.connect(self.showDialog)
-     
-        
-        ####################################################
-        # Run counter
-        
-        self.runid = 0 # Keeps track of highest ID number
         
         ####################################################
         # file selection) Double Click
@@ -343,119 +397,284 @@ class MainWindow(QtGui.QMainWindow, Ui_MainWindow):
         # runScan
         self.runScanningSimulation.clicked.connect(self.changeScan)
 
-        
         ###################################################
         # default load setttings for selected default graphs
         self.list_defaults()
         self.appendToCombo()
         self.defaultCombo.currentIndexChanged.connect(self.loadDefault)
         self.saveDefaultButton.clicked.connect(self.saveDefault)
-       
-        ###################################################################################################################
-        # CHANGE CONTROL FILE WITH SPINNER INPUTS
-
-        #timing
-        self.NoutSpin.valueChanged.connect(lambda: self.change('timing', 'NOUT', self.NoutSpin.value()))
-        self.TimeStepSpin.valueChanged.connect(lambda: self.change('timing', 'TIMESTEP', self.TimeStepSpin.value()))
-        self.MzSpin.valueChanged.connect(lambda: self.change('timing', 'MZ', self.MzSpin.value()))
-        self.MXGSpin.valueChanged.connect(lambda: self.change('timing', 'MXG', self.MXGSpin.value()))
-
-        # mesh spinners      
-        self.nxSpin.valueChanged.connect(lambda: self.change('mesh', 'nx', self.nxSpin.value()))
-        self.nySpin.valueChanged.connect(lambda: self.change('mesh', 'ny', self.nySpin.value()))
-        self.lengthSpin.valueChanged.connect(lambda: self.change('mesh', 'length', self.lengthSpin.value()))
-        self.dxSpin.valueChanged.connect(lambda: self.change('mesh', 'dx', self.dxSpin.value()))
-        self.ixseps1Spin.valueChanged.connect(lambda: self.change('mesh', 'ixseps1', self.ixseps1Spin.value()))
-        self.ixseps2Spin.valueChanged.connect(lambda: self.change('mesh', 'ixseps2', self.ixseps2Spin.value()))
-        self.rxySpin.valueChanged.connect(lambda: self.change('mesh', 'Rxy', self.rxySpin.value()))
-        self.bpxySpin.valueChanged.connect(lambda: self.change('mesh', 'Bpxy', self.bpxySpin.value()))
-        self.btxySpin.valueChanged.connect(lambda: self.change('mesh', 'Btxy', self.btxySpin.value()))
-        self.bxySpin.valueChanged.connect(lambda: self.change('mesh', 'Bxy', self.bxySpin.value()))
-        self.htheSpin.valueChanged.connect(lambda: self.change('mesh', 'hthe', self.htheSpin.value()))
-        self.sintySpin.valueChanged.connect(lambda: self.change('mesh', 'sinty', self.sintySpin.value()))
-        # mesh line edit
-        self.dyLine.textChanged.connect(lambda: self.change('mesh', 'dy', self.dyLine.text()))
-
-        # ddy text edit
-        self.firstLine.textChanged.connect(lambda: self.change('ddy', 'first', self.firstLine.text()))
-        self.secondLine.textChanged.connect(lambda: self.change('ddy', 'second', self.secondLine.text()))
-        self.upwindLine.textChanged.connect(lambda: self.change('ddy', 'upwind', self.upwindLine.text()))
     
-        # solver spinner
-        self.mxstepSpin.valueChanged.connect(lambda: self.change('solver', 'mxstep', self.mxstepSpin.value()))
+        ###################################################
+        # initialise 
+        self.readConfig()
+        self.rearrange()
 
-        # SOL1D
-            #spinners
-        self.TnormSpin.valueChanged.connect(lambda: self.change('SOL1D', 'Tnorm', self.TnormSpin.value()))
-        self.BnormdoubleSpin.valueChanged.connect(lambda: self.change('SOL1D', 'Bnorm', self.BnormdoubleSpin.value()))
-        self.AAdoubleSpin.valueChanged.connect(lambda: self.change('SOL1D', 'AA', self.AAdoubleSpin.value()))
-        self.EionizeSpin.valueChanged.connect(lambda: self.change('SOL1D', 'Eionize', self.EionizeSpin.value()))
-        self.vwallSpin.valueChanged.connect(lambda: self.change('SOL1D', 'vwall', self.vwallSpin.value()))
-        self.frecycleSpin.valueChanged.connect(lambda: self.change('SOL1D', 'frecycle', self.frecycleSpin.value()))
-        self.fredistributeSpin.valueChanged.connect(lambda: self.change('SOL1D', 'fredistribute', self.fredistributeSpin.value()))
-        self.gaspuffSpin.valueChanged.connect(lambda: self.change('SOL1D', 'gaspuff', self.gaspuffSpin.value()))
-        self.dneutSpin.valueChanged.connect(lambda: self.change('SOL1D', 'dneut', self.dneutSpin.value()))
-        self.fimpSpin.valueChanged.connect(lambda: self.change('SOL1D', 'fimp', self.fimpSpin.value()))
-        self.sheath_gammaSpin.valueChanged.connect(lambda: self.change('SOL1D', 'sheath_gamma', self.sheath_gammaSpin.value()))
-        self.hyperSpin.valueChanged.connect(lambda: self.change('SOL1D', 'hyper', self.hyperSpin.value()))
-            #text edit        
-        self.redist_weightLine.textChanged.connect(lambda: self.change('SOL1D', 'redist_weight', self.redist_weightLine.text()))
-        self.areaLine.textChanged.connect(lambda: self.change('SOL1D', 'area', self.areaLine.text()))
-        self.NnormLine.textChanged.connect(lambda: self.change('SOL1D', 'Nnorm', self.NnormLine.text()))
-        self.nlossLine.textChanged.connect(lambda: self.change('SOL1D', 'nloss', self.nlossLine.text()))
-            #spin boxes
-        self.diagnoseCombo.currentIndexChanged.connect(lambda: self.change('SOL1D', 'diagnose', self.diagnoseCombo.currentText()))
-        self.atomicCombo.currentIndexChanged.connect(lambda: self.change('SOL1D', 'atomic', self.atomicCombo.currentText()))
+    def showResize(self):
+        resize.show()
+
+    
+    def updateControls(self, inpfile):
+        global inputsLst, sectionLst, inputsTupLst, groupbox, parser
         
-        # All
-            #spinner
-        self.scaleDoubleSpin.valueChanged.connect(lambda: self.change('All', 'scale', self.scaleDoubleSpin.value()))
-            #text edit
-        self.bndry_allLine.textChanged.connect(lambda: self.change('All', 'bndry_all', self.bndry_allLine.text()))
-     
-        # Ne
-            #spinners
-        self.scale2Spin.valueChanged.connect(lambda: self.change('Ne', 'scale', self.scale2Spin.value()))
-        self.functionDoubleSpin2.valueChanged.connect(lambda: self.change('Ne', 'function', self.functionDoubleSpin2.value()))
-            #text edit
-        self.sourceNeLine.textChanged.connect(lambda: self.change('Ne', 'source', self.sourceNeLine.text()))
-        self.fluxLine.textChanged.connect(lambda: self.change('Ne', 'flux', self.fluxLine.text()))
+        self.delete()
+        inputsLst = []
+        sectionLst = []
+        inputsTupLst = []
+        groupbox = []
         
-        # NVi spinner
-            #spinner
-        self.scale3Spin.valueChanged.connect(lambda: self.change('NVi', 'scale', self.scale3Spin.value()))
-            #text edits
-        self.functionNViLine.textChanged.connect(lambda: self.change('NVi', 'function', self.functionNViLine.text()))
-        self.bndry_targetLine.textChanged.connect(lambda: self.change('NVi', 'bndry_target', self.bndry_targetLine.text()))
-
-        # P
-            #spinners
-        self.scale4Spin.valueChanged.connect(lambda: self.change('P', 'scale', self.scale4Spin.value()))
-        self.functionDoubleSpin4.valueChanged.connect(lambda: self.change('P', 'function', self.functionDoubleSpin4.value()))
-            #text edit
-        self.sourceLine.textChanged.connect(lambda: self.change('P', 'source', self.sourceLine.text()))
-        self.powerfluxLine.textChanged.connect(lambda: self.change('P', 'powerflux', self.powerfluxLine.text()))  
-
-        # Nn
-            #spinner
-        self.scale5Spin.valueChanged.connect(lambda: self.change('Nn', 'scale', self.scale5Spin.value()))
-            #text edit
-        self.functionNnLine.textChanged.connect(lambda: self.change('Nn', 'function', self.functionNnLine.text()))
-
-        #Nvn
-            #combobox
-        self.evolveNVnCombo.currentIndexChanged.connect(lambda: self.change('NVn', 'evolve', self.evolveNVnCombo.currentText()))
+        folder = re.sub('/BOUT.inp', '', inpfile)
+        text = open(folder + '/usernotes.ini').read()
+        self.plainTextEdit.setPlainText(text)
         
-        # Pn
-            #spinners
-        self.TstartDoubleSpin.valueChanged.connect(lambda: self.change('Pn', 'Tstart', self.TstartDoubleSpin.value()))
-        self.scaleDoubleSpin6.valueChanged.connect(lambda: self.change('Pn', 'scale', self.scaleDoubleSpin6.value()))
-            #text edit
-        self.funcitonPnLine.textChanged.connect(lambda: self.change('Pn', 'function', self.funcitonPnLine.text()))
-            #combox
-        self.evolvePnCombo.currentIndexChanged.connect(lambda: self.change('Pn', 'evolve', self.evolvePnCombo.currentText()))
+        with open(inpfile) as fp:
+            parser = configparser.ConfigParser()
+            addTiming(inpfile)
+            parser.optionxform = str
+            parser.readfp(fp)
+        
+        self.fileLabel.setText(QtGui.QApplication.translate("MainWindow", str(inpfile), None, QtGui.QApplication.UnicodeUTF8))
+        self.readConfig()
+        self.rearrange()
+        
+        
+    def readConfig(self):
+        """
+        Reads the contents of the selected config file. For each section it creates a new frame to insert controls.
+        It then finds all the items within that section and test the data type of that value, inserting either a combobox,
+        double combobox or line edit depending.
+        """
+        global n, m, sections
+ 
+        sections = parser.sections()
+        
+
+        
+        for section in sections:
+            
+
+            items = parser.items(section)
+            y =len(items) 
+            self.createGroupBox(section, y)
+            n = 1   
+            for i in range(len(items)):
+                subkey = items[i][0]
+                value = self.clean(items[i][1], '#')    # removes comments
+                try:
+                    int(value)                  
+                    self.createBox(n , subkey, value, section)
+                except ValueError:
+                    try:
+                        float(value)
+                        if float(value) > 1000000:
+                            self.createLine(n , subkey, value,section)
+                        else:
+                            self.createDoubleSpin(n , subkey, value, section)
+                    except ValueError:
+                        self.createLine(n , subkey, value, section)
+                n = n + 1   # the n count is used so that each succesivly created input is created a factor n pixels lower than the previous
 
 
+    def rearrange(self):
+        global leftBorder, topBorder, verticalSeperation, maxLength, boxWidth, horizontalSeperation
+        """
+        The groupbox list contains the names of all the group boxes and the length of the inputs in that section, stored as a list of tuples,
+        it then works out the best arrangement for these by finding frames of sizes that add together to a defined limit,
+        this will be eventually a user input. The frames are then moved around the screen in their groups that add nicely
+        so that they are distributed evenly and made a length comparable to the inputs within them. 
+        """
+        groupbox2 = groupbox
+        n = 0
+        while len(groupbox2) > 0:
+            k = 0
+            newLst = [] # newLst is cleared each time a group of suitable length is found 
+            newLst.append(groupbox2[0])
+            del groupbox2[0]
+            total = self.total(newLst)
+            for i in range(len(groupbox2)):
+                if total + int(groupbox2[i-k][1]) < maxLength:
+                    newLst.append(groupbox2[i-k])
+                    total = self.total(newLst)
+                    del groupbox2[i-k]
+                    k = k + 1   #this k makes up for a deleted value
+            length = 0
+            m = 0
+            for obj in newLst:      # for the group of good length they are sorted
+                mycode = 'self.' + obj[0] + '.setGeometry(QtCore.QRect(leftBorder + horizontalSeperation*n, length + verticalSeperation*m + topBorder, boxWidth, obj[1]))'     
+                exec mycode
+                length = length + int(obj[1])   # length means length of previous frame, so current frame is positioned after it
+                m = m+1
+            n = n +1
+
+            
+    def total(self, Lst):
+        """
+        is just used to find the total of the current newLst
+        """
+        total = 0
+        for x in range(len(Lst)):
+            total = total + int(Lst[x][1])
+        return total
+
+      
+    """""""""""""""""""""""
+    The exec parts of the code in the create functions are used because I couldn't find a way of using a variable within a line such as self.objectName.setText (etc)
+    and so all inputs called objectName which won't work for updating the control file. Object name takes the form of subkey value + section name. This is to make sure
+    that when two objects of the same name in different sections are created they are unique and so can have their own behaviour. 
+    """""""""""""""""""""""
+    def delete(self):
+        for item in inputsLst:
+          mycode = 'self.' + item + '.deleteLater()'
+          exec mycode
+          fg = 3
+
+        for section in sections:
+          objectName = section
+          mycode = 'self.' + objectName + '.deleteLater()'
+          exec mycode
+
+    def createGroupBox(self, section, y):
+        """
+        creates a new frame for each section. 
+        """
+        global sepInput
+        objectName = section
+        sectionLst.append(sectionLst)
+        ylength = 28 + y *sepInput    # finds the length of all the input controls in this section
+        mycode = 'self.' + objectName + ' = QtGui.QGroupBox(self.tab_2)'
+        exec mycode
+        mycode = 'self.' + objectName + '.setGeometry(QtCore.QRect(10, 10, 210, ylength))'  # rearrange function called later, these values are just placeholders
+        exec mycode
+        mycode = 'self.' + objectName + ' .setTitle(QtGui.QApplication.translate("MainWindow", section, None, QtGui.QApplication.UnicodeUTF8))'
+        exec mycode
+        tup = (section, ylength)    #this list of tuples is used later to reorganise position
+        groupbox.append(tup)
+        
+      
+
+    def createDoubleSpin(self, n, subkey, value, section):
+        """
+        creates a new double spin for each input item that is a float. 
+        """
+        global xLabel, xInput, labelWidth, sepInput
+        objectName = subkey + 'Double' + section
+        inputsLst.append(objectName)
+        tup = (section, objectName)
+        inputsTupLst.append(tup)
+        mycode = 'self.' + objectName + ' = QtGui.QDoubleSpinBox(self.' + section +')'
+        exec mycode
+        mycode = 'self.' + objectName + '.setMinimum(-1000000.0)'
+        exec mycode
+        mycode = 'self.' + objectName + '.setMaximum(1000000.0)'
+        exec mycode
+        mycode = 'self.' + objectName + '.setSingleStep(0.01)'
+        exec mycode
+        mycode = 'self.' + objectName + '.setProperty("value",' + value + ')'
+        exec mycode
+        mycode = 'self.' + objectName + '.setObjectName(objectName)'
+        exec mycode
+        mycode =  'self.' + objectName + '.setGeometry(QtCore.QRect(xInput, sepInput*n, 100, 22))'
+        exec mycode
+        mycode = 'self.label = QtGui.QLabel(self.' +section + ')'
+        exec mycode
+        #labels
+        self.label.setGeometry(QtCore.QRect(xLabel, sepInput*n, labelWidth, 15))
+        self.label.setObjectName("label_n")
+        self.label.setText(QtGui.QApplication.translate("MainWindow", subkey, None, QtGui.QApplication.UnicodeUTF8))
+            
+    def createBox(self, n, subkey, value, section):
+        """
+        creates a new spin box for each input item that is an integer. 
+        """
+        global xLabel, xInput, labelWidth, sepInput
+        objectName = subkey + 'Spin' + section
+        inputsLst.append(objectName)
+        tup = (section, objectName)
+        inputsTupLst.append(tup)
+        mycode = 'self.' + objectName + ' = QtGui.QSpinBox(self.' +section + ')'
+        exec mycode
+        mycode = 'self.' + objectName + '.setMinimum(-1000000)'
+        exec mycode
+        mycode = 'self.' + objectName + '.setMaximum(1000000)'
+        exec mycode
+        mycode = 'self.' + objectName + '.setSingleStep(1)'
+        exec mycode
+        mycode = 'self.' + objectName + '.setProperty("value",' + value + ')'
+        exec mycode
+        mycode = 'self.' + objectName + '.setObjectName(objectName)'
+        exec mycode
+        mycode =  'self.' + objectName + '.setGeometry(QtCore.QRect(xInput, sepInput*n, 100, 22))'
+        exec mycode
+        mycode = 'self.label = QtGui.QLabel(self.' +section + ')'
+        exec mycode
+        # labels
+        self.label.setGeometry(QtCore.QRect(xLabel, sepInput*n, labelWidth, 15))
+        self.label.setObjectName("label_n")
+        self.label.setText(QtGui.QApplication.translate("MainWindow", subkey, None, QtGui.QApplication.UnicodeUTF8))
+        
+
+        
+    def createLine(self, n, subkey, value, section):
+        """
+        creates a new line for each input item that is text. 
+        """
+        global xLabel, xInput, labelWidth, sepInput
+        objectName = subkey + 'Line' + section
+        inputsLst.append(objectName)
+        tup = (section, objectName)
+        inputsTupLst.append(tup)
+        mycode = 'self.' + objectName + ' = QtGui.QLineEdit(self.' + section + ')'
+        exec mycode   
+        mycode =  'self.' + objectName + '.setGeometry(QtCore.QRect(xInput, sepInput*n, 100, 22))'
+        exec mycode        
+        mycode = 'self.' + objectName + '.setObjectName(objectName)'
+        exec mycode        
+        mycode = 'self.' + objectName + '.setText( str(value))'
+        exec mycode
+        mycode = 'self.label = QtGui.QLabel(self.' +section + ')'
+        exec mycode
+        # labels
+        self.label.setGeometry(QtCore.QRect(xLabel, sepInput*n, labelWidth, 15))
+        self.label.setObjectName("label_n")
+        self.label.setText(QtGui.QApplication.translate("MainWindow", subkey, None, QtGui.QApplication.UnicodeUTF8))
+
+    def saveSettings(self, path):
+
+        """
+        the for loops in this function go through the whole lit of inputs and removes either 'line', 'double' or 'spin'.
+        in comparing to the original inputLst values this allows function to know what sort of data input it is. i.e a line input
+        or a spin box of some sort. The change function is then used to update the config file with new values. 
+        """
+        
+        for item in inputsTupLst:
+            stripitem = re.sub('Line', '', item[1])
+            if stripitem != item[1]:
+                stripitem = re.sub(item[0], '', stripitem)
+                mycode = 'self.change(item[0], stripitem, self.' + item[1] + '.text())'
+                exec mycode
+                
+                
+        for item in inputsTupLst:
+            stripitem = re.sub('Double', '', item[1])
+            if stripitem != item[1]:
+                stripitem = re.sub(item[0], '', stripitem)
+                mycode = 'self.change(item[0], stripitem, self.' + item[1] + '.value())'
+                exec mycode
+                
+        for item in inputsTupLst:
+            stripitem = re.sub('Spin', '', item[1])
+            if stripitem != item[1]:
+                stripitem = re.sub(item[0], '', stripitem)
+                mycode = 'self.change(item[0], stripitem, self.' + item[1] + '.value())'
+                exec mycode
+         
+        with open (path, 'w') as configfile:
+            parser.write(configfile)
+            
+
+    def STOP(self):
+        global proc
+        os.killpg(proc.pid, signal.SIGINT)
+      
     def changerun(self):
         """
         creates a global variable run that changes the save dialog boxes function so
@@ -475,120 +694,6 @@ class MainWindow(QtGui.QMainWindow, Ui_MainWindow):
         global run
         run = 'scan'
         self.showDialog()
-    
-    def updateControls(self, inpfile):
-        """
-        when a new file is loaded the spinners in the GUI are updated to start on the same value
-        as that in the new file
-        """
-        folder = re.sub('/BOUT.inp', '', loadpath1)
-        text = open(folder + '/usernotes.ini').read()
-        self.plainTextEdit.setPlainText(text)
-        parser.read(inpfile)
-        self.fileLabel.setText(QtGui.QApplication.translate("MainWindow", str(loadpath1), None, QtGui.QApplication.UnicodeUTF8))
-
-        # timing section 
-        self.NoutSpin.setValue(float(self.clean(parser.get('timing','NOUT'),'#')))
-        self.TimeStepSpin.setValue(float(self.clean(parser.get('timing','TIMESTEP'),'.')))     # for some reason this has a dot after the value which confuses the spin boxes
-        self.MzSpin.setValue(float(self.clean(parser.get('timing','MZ'), '#')))
-        self.MXGSpin.setValue(float(self.clean(parser.get('timing','MXG'),'#')))
-
-        # mesh section 
-        self.nxSpin.setValue(float(self.clean(parser.get('mesh','nx'),'#')))
-        self.nySpin.setValue(float(self.clean(parser.get('mesh','ny'),'#')))
-        self.lengthSpin.setValue(float(self.clean(parser.get('mesh','length'), '#')))
-        self.dxSpin.setValue(float(self.clean(parser.get('mesh','dx'),'#')))
-        self.ixseps1Spin.setValue(float(self.clean(parser.get('mesh','ixseps1'),'#')))
-        self.ixseps2Spin.setValue(float(self.clean(parser.get('mesh','ixseps2'), '#')))
-        self.rxySpin.setValue(float(self.clean(parser.get('mesh','Rxy'),'#')))
-        self.bpxySpin.setValue(float(self.clean(parser.get('mesh','Bpxy'),'#')))
-        self.btxySpin.setValue(float(self.clean(parser.get('mesh','Btxy'),'#'))) 
-        self.bxySpin.setValue(float(self.clean(parser.get('mesh','Bxy'),'#')))
-        self.htheSpin.setValue(float(self.clean(parser.get('mesh','hthe'), '#')))
-        self.sintySpin.setValue(float(self.clean(parser.get('mesh','sinty'),'#')))
-        # mesh line
-        self.dyLine.setText(str(self.clean(parser.get('mesh','dy'),'#')))        
-
-        # ddy section
-        self.firstLine.setText(str(self.clean(parser.get('ddy','first'),'#')))
-        self.secondLine.setText(str(self.clean(parser.get('ddy','second'),'#')))
-        self.upwindLine.setText(str(self.clean(parser.get('ddy','upwind'),'#')))
-
-
-        # solver section
-        self.mxstepSpin.setValue(float(self.clean(parser.get('solver','mxstep'),'#')))
-
-        # SOL1D section
-            #spinner
-        self.TnormSpin.setValue(float(self.clean(parser.get('SOL1D','Tnorm'),'#')))
-        self.BnormdoubleSpin.setValue(float(self.clean(parser.get('SOL1D','Bnorm'),'#')))
-        self.AAdoubleSpin.setValue(float(self.clean(parser.get('SOL1D','AA'), '#')))
-        self.EionizeSpin.setValue(float(self.clean(parser.get('SOL1D','Eionize'),'#')))
-        self.vwallSpin.setValue(float(self.clean(parser.get('SOL1D','vwall'),'#')))
-        self.frecycleSpin.setValue(float(self.clean(parser.get('SOL1D','frecycle'), '#')))
-        self.fredistributeSpin.setValue(float(self.clean(parser.get('SOL1D','fredistribute'),'#')))
-        self.gaspuffSpin.setValue(float(self.clean(parser.get('SOL1D','gaspuff'),'#')))
-        self.dneutSpin.setValue(float(self.clean(parser.get('SOL1D','dneut'),'#'))) 
-        self.fimpSpin.setValue(float(self.clean(parser.get('SOL1D','fimp'),'#')))
-        self.sheath_gammaSpin.setValue(float(self.clean(parser.get('SOL1D','sheath_gamma'), '#')))
-        self.hyperSpin.setValue(float(self.clean(parser.get('SOL1D','hyper'),'#')))
-            #text edit
-        self.redist_weightLine.setText(str(self.clean(parser.get('SOL1D','redist_weight'),'#')))
-        self.areaLine.setText(str(self.clean(parser.get('SOL1D','area'),'#')))
-        self.NnormLine.setText(str(self.clean(parser.get('SOL1D','Nnorm'),'#')))
-        self.nlossLine.setText(str(self.clean(parser.get('SOL1D','nloss'),'#')))
-            #combo boxes
-        self.atomicCombo.setCurrentIndex(self.TorF('SOL1D', 'atomic'))
-        self.diagnoseCombo.setCurrentIndex(self.TorF('SOL1D', 'diagnose'))
-              
-        # All section
-            #spinner
-        self.scaleDoubleSpin.setValue(float(self.clean(parser.get('All','scale'),'#')))
-            #text edit
-        self.bndry_allLine.setText(str(self.clean(parser.get('All','bndry_all'),'#')))
-
-        # Ne section
-            #spinner
-        self.scale2Spin.setValue(float(self.clean(parser.get('Ne','scale'),'#')))
-        self.functionDoubleSpin2.setValue(float(self.clean(parser.get('Ne','function'),'#')))
-            #text
-        self.sourceNeLine.setText(str(self.clean(parser.get('Ne','source'),'#')))
-        self.fluxLine.setText(str(self.clean(parser.get('Ne','flux'),'#')))
-
-        #NVi section
-            #spinner
-        self.scale3Spin.setValue(float(self.clean(parser.get('NVi','scale'),'#')))
-            #text edit
-        self.functionNViLine.setText(str(self.clean(parser.get('NVi','function'),'#')))
-        self.bndry_targetLine.setText(str(self.clean(parser.get('NVi','bndry_target'),'#')))
-
-        #P section
-            #spinners
-        self.scale4Spin.setValue(float(self.clean(parser.get('P','scale'),'#')))
-        self.functionDoubleSpin4.setValue(float(self.clean(parser.get('P','function'),'#')))
-            #text edit
-        self.sourceLine.setText(str(self.clean(parser.get('P','source'),'#')))
-        self.powerfluxLine.setText(str(self.clean(parser.get('P','powerflux'),'#')))
-
-        # Nn section
-            #spinner
-        self.scale5Spin.setValue(float(self.clean(parser.get('Nn','scale'),'#')))
-            #text edit
-        self.functionNnLine.setText(str(self.clean(parser.get('Nn','function'),'#')))
-
-        #NVn section
-            #combo box
-        self.evolveNVnCombo.setCurrentIndex(self.TorF('NVn', 'evolve'))      
-
-        # Pn section
-            #spinners
-        self.TstartDoubleSpin.setValue(float(self.clean(parser.get('Pn','Tstart'),'#')))
-        self.scaleDoubleSpin6.setValue(float(self.clean(parser.get('Pn','scale'),'#')))
-            #text edit
-        self.funcitonPnLine.setText(str(self.clean(parser.get('Pn','function'),'#')))
-            #combo box
-        self.evolvePnCombo.setCurrentIndex(self.TorF('Pn', 'evolve'))
-
 
         
 
@@ -599,7 +704,7 @@ class MainWindow(QtGui.QMainWindow, Ui_MainWindow):
         Write some log text to output text widget
         """
         self.textOutput.append(text)
-        self.textOutput.ensureCursorVisible()
+        
 
     def makeUnique(self, name):
         """
@@ -1171,7 +1276,11 @@ class MainWindow(QtGui.QMainWindow, Ui_MainWindow):
           for section in sections:
             scan.sectionCombo.addItem(section)
             items = parser.items(section)
-          scan.appendItems()            
+          scan.appendItems()
+          for section in sections:
+            scan.sectionCombo_2.addItem(section)
+            items = parser.items(section)
+          scan.appendItems2()  
 
 
 ####################################### NEW CLASS #######################################
@@ -1302,7 +1411,6 @@ class dialogsave(QtGui.QMainWindow, Ui_Dialog):
                 oldfolder = re.sub('/BOUT.inp', '', loadpath1)
                 if path != oldfolder:               # if destination is different to source
                       
-                      print 'path different', path, loadpath1
                       if not os.path.isdir(path):       # if destination is new creates it
                             os.makedirs(path)
                             
@@ -1325,59 +1433,15 @@ class dialogsave(QtGui.QMainWindow, Ui_Dialog):
                           
                       parentDir(loadpath1, path)      # updates the parentDir file
                       
-                      path = path + '/' + 'BOUT.inp'    # write an updated BOUT control file
-                      with open (path, 'w') as configfile:
-                              parser.write(configfile)
-
+                      path = path + '/' + 'BOUT.inp'
+                      window.saveSettings(path)       # write an updated BOUT control file
                 else:
                       path = path + '/' + 'BOUT.inp'    # if same folder selceted update BOUT file
-                      with open (path, 'w') as configfile:
-                              parser.write(configfile)
+                      window.saveSettings(path)
+                      
                 window.tableWidget.clearContents()
                         
-                        
-
-
-##                
-##                if path != loadpath1:  
-##                    if not os.path.isdir(path):
-##                        os.makedirs(path)
-##                    oldfolder = re.sub('/BOUT.inp', '', loadpath1)
-##                    newfolder = re.sub('/BOUT.inp', '', path)
-##                    global finalpath
-##                    finalpath = newfolder
-##                    inputfiles = os.listdir(oldfolder)
-##                    for runfile in inputfiles:
-##                        
-##                        newpath = os.path.join(newfolder, runfile)
-##                        oldpath = os.path.join(oldfolder, runfile)
-##                        print oldpath+'/'+ runfile
-##                        if os.path.isfile(str(runfile)) == True:                  
-##                          shutil.copy(oldpath, newpath)
-##                          newfolder = re.sub(runfile, '', newpath) 
-##                          oldfolder = re.sub(runfile, '', oldpath)
-##
-##
-##                          
-##                    if os.path.isfile(oldfolder + '/usernotes.ini'):
-##                        shutil.copy(oldfolder + '/usernotes.ini', newfolder + '/usernotes.ini')
-##                        with open(newfolder + '/usernotes.ini', 'wt') as file:
-##                            file.write(window.plainTextEdit.toPlainText())
-##                        file.close()
-##                    if not os.path.isfile(oldfolder + '/usernotes.ini'):
-##                        with open(newfolder + '/usernotes.ini', 'wt') as file:
-##                            file.write(window.plainTextEdit.toPlainText())
-##                        file.close()   
-##                    parentDir(loadpath1, path)
-##                    path = path + '/' + 'BOUT.inp'
-##                    with open (path, 'w') as configfile:
-##                            parser.write(configfile)
-##
-##                else:
-##                      path = path + '/' + 'BOUT.inp'
-##                      with open (path, 'w') as configfile:
-##                              parser.write(configfile)
-##                window.tableWidget.clearContents()
+                      
 
         def restart(self, path):
                 """
@@ -1489,8 +1553,12 @@ class Scandialog(QtGui.QMainWindow, Ui_ScanDialog):
         # These calls set up the window
         super(Scandialog, self).__init__(parent)
         self.setupUi(self)
+        
         self.sectionCombo.currentIndexChanged.connect(self.appendItems)
         self.indexCombo.currentIndexChanged.connect(self.loadInitial)
+        self.sectionCombo_2.currentIndexChanged.connect(self.appendItems2)
+        self.indexCombo_2.currentIndexChanged.connect(self.loadInitial2)
+
         self.pushButton.clicked.connect(self.run)
         self.pushButton_2.clicked.connect(self.close)
 
@@ -1500,6 +1568,24 @@ class Scandialog(QtGui.QMainWindow, Ui_ScanDialog):
         currentSection = parser.items(sections[index])
         for item in currentSection:
           self.indexCombo.addItem(str(item[0]))
+          
+    def appendItems2(self):
+        self.indexCombo_2.clear()
+        index = self.sectionCombo_2.currentIndex()
+        currentSection = parser.items(sections[index])
+        for item in currentSection:
+          self.indexCombo_2.addItem(str(item[0]))
+          
+    def loadInitial2(self):
+        index = self.sectionCombo_2.currentIndex()
+        index2= self.indexCombo_2.currentIndex()
+        sections = parser.sections()
+        items = parser.items(sections[index])
+        item = items[index2]
+        item = str(item[1])
+        item = window.clean(item,'#')
+        item= window.clean(item, '.')
+        self.initialLine2.setText(item)
 
     def loadInitial(self):
         index = self.sectionCombo.currentIndex()
@@ -1521,15 +1607,27 @@ class Scandialog(QtGui.QMainWindow, Ui_ScanDialog):
         initial  = self.initialLine.text()
         limit = self.finalLine.text()
         increment = self.incrementLine.text()
+      
+        key2 = self.sectionCombo_2.itemText(self.sectionCombo_2.currentIndex())
+        subkey2 = self.indexCombo_2.itemText(self.indexCombo_2.currentIndex())
+        initial2 = self.initialLine2.text()
+        limit2 = self.finalLine2.text()
+        increment2 = self.incrementLine2.text()
+        # change whether the inputed increment is added to the initial or is percentage change
+        if self.comboBox_2.currentText() == 'Raw':
+            incrementType = '+'
+        else:
+            incrementType = ''
+        # test whether to restart
         if self.checkBox.isChecked() == True:
           restart = 'y'
         else:
           restart = 'n'
-        self.runitscan(path, key, subkey, initial, limit, increment, restart)
+        self.runitscan(path, key, subkey, initial, limit, increment, restart, key2, subkey2, initial2, limit2, increment2, incrementType)
         self.close()
 
-    def runitscan(self, path, key, subkey, initial, limit, increment, restart):
-        self.worker = scanWorker(path, key, subkey, initial, limit, increment, restart, window.outputStream)
+    def runitscan(self, path, key, subkey, initial, limit, increment, restart, key2, subkey2, initial2, limit2, increment2, incrementType):
+        self.worker = scanWorker(path, key, subkey, initial, limit, increment, restart, key2, subkey2, initial2, limit2, increment2,incrementType, window.outputStream)
         window.tabWidget.setCurrentIndex(2)
         if not self.worker.isRunning():
                 self.worker.exiting= False
@@ -1542,8 +1640,113 @@ class Scandialog(QtGui.QMainWindow, Ui_ScanDialog):
             else:
                     window.outputStream.ensureCursorVisible()
                     window.outputStream.insertPlainText(value)
-                    window.outputStream.ensureCursorVisible()    
+                    window.outputStream.ensureCursorVisible()
+                    
+####################################### NEW CLASS #######################################
+
+class helpView(QtGui.QMainWindow, Ui_helpViewer):
+    """
+    This class represents the main window
+    which inherits from Qt's QMainWindow and from
+    the class defined in mainwindow (called Ui_MainWindow)
+    """
+    def __init__(self, parent=None):
+        """
+        Initialisation routine
+        """
+        # These calls set up the window
+        super(helpView, self).__init__(parent)
+        self.setupUi(self)
+
+    def openHelp(self):
+          with open('helpHTML.htm', 'r') as helpfile:
+              
+              self.textBrowser.insertHtml(helpfile.read())
+              helpfile.close()
+              self.show()
+
+####################################### NEW CLASS #######################################
+
+class resize(QtGui.QMainWindow, Ui_Resize):
+    """
+    This class represents the main window
+    which inherits from Qt's QMainWindow and from
+    the class defined in mainwindow (called Ui_MainWindow)
+    """
+    def __init__(self, parent=None):
+        """
+        Initialisation routine
+        """
+        # These calls set up the window
+        super(resize, self).__init__(parent)
+        self.setupUi(self)
+
+        # initialise the resize window with values from the config file
+        self.leftSpin.setValue(int(position.get('appearance', 'leftborder')))
+        self.vSpin.setValue(int(position.get('appearance', 'verticalseperation')))
+        self.topSpin.setValue(int(position.get('appearance', 'topborder')))
+        self.maxSpin.setValue(int(position.get('appearance', 'maxlength')))
+        self.widthSpin.setValue(int(position.get('appearance', 'boxwidth')))
+        self.hSpin.setValue(int(position.get('appearance', 'horizontalseperation')))
+        self.labelxSpin.setValue(int(position.get('appearance', 'xlabel')))
+        self.inputxSpin.setValue(int(position.get('appearance', 'xinput')))
+        self.labelWidthSpin.setValue(int(position.get('appearance', 'labelwidth')))
+        self.inputSepSpin.setValue(int(position.get('appearance', 'sepinput')))
+
+        # changes the config file that has been read into the system
+        self.leftSpin.valueChanged.connect(lambda: position.set('appearance', 'leftborder',self.leftSpin.value()))
+        self.vSpin.valueChanged.connect(lambda: position.set('appearance', 'verticalseperation',self.vSpin.value()))
+        self.topSpin.valueChanged.connect(lambda: position.set('appearance', 'topborder',self.topSpin.value()))
+        self.maxSpin.valueChanged.connect(lambda: position.set('appearance', 'maxlength',self.maxSpin.value()))
+        self.widthSpin.valueChanged.connect(lambda: position.set('appearance', 'boxwidth',self.widthSpin.value()))
+        self.hSpin.valueChanged.connect(lambda: position.set('appearance', 'horizontalseperation',self.hSpin.value()))
+        self.labelxSpin.valueChanged.connect(lambda: position.set('appearance', 'xlabel',self.labelxSpin.value()))
+        self.inputxSpin.valueChanged.connect(lambda: position.set('appearance', 'xinput',self.inputxSpin.value()))
+        self.labelWidthSpin.valueChanged.connect(lambda: position.set('appearance', 'labelwidth',self.labelWidthSpin.value()))
+        self.inputSepSpin.valueChanged.connect(lambda: position.set('appearance', 'sepinput',self.inputSepSpin.value()))
+
+        #  configures the button box
+        self.ok.clicked.connect(self.updateConfig)
+        self.ok.clicked.connect(self.close)
+        self.cancel.clicked.connect(self.close)
+        self.apply.clicked.connect(self.updateConfig)
+
+    def updateConfig(self):
+        global config
+        with open (config, 'w') as configfile:
+            position.write(configfile)
+        self.updateValues()
+
+
+    def updateValues(self):
+        global leftBorder, verticalSeperation, topBorder, maxLength, boxWidth, horizontalSeperation, xLabel, xInput, labelWidth, sepInput, loadpath1
+        with open(config) as fp:
+            position = configparser.ConfigParser()
+            position.optionxform = str
+            position.readfp(fp)
+        leftBorder = int(position.get('appearance', 'leftborder'))
+        verticalSeperation = int(position.get('appearance', 'verticalseperation'))
+        topBorder = int(position.get('appearance', 'topborder'))
+        maxLength = int(position.get('appearance', 'maxlength'))
+        boxWidth = int(position.get('appearance', 'boxwidth'))
+        horizontalSeperation = int(position.get('appearance', 'horizontalseperation'))
+        xLabel = int(position.get('appearance', 'xlabel'))
+        xInput = int(position.get('appearance', 'xinput'))
+        labelWidth = int(position.get('appearance', 'labelwidth'))
+        sepInput = int(position.get('appearance', 'sepinput'))
+        window.tabWidget.setCurrentIndex(0)
+
+        if loadpath1 == 'empty':
+             window.updateControls(loadpath)
+        else:
+             loadpath1 = re.sub('/BOUT.inp', '', loadpath1)
+             window.updateControls(loadpath1 + '/BOUT.inp')
+
+        window.tabWidget.setCurrentIndex(1)
         
+
+        
+
 if __name__ == "__main__":
     import sys
     
@@ -1551,6 +1754,8 @@ if __name__ == "__main__":
     app = QtGui.QApplication(sys.argv)
     
     # Create the window
+    helpView = helpView()
+
     dialog = dialogsave()
     window = MainWindow()
     defaultSave = defaultsave()
@@ -1560,6 +1765,7 @@ if __name__ == "__main__":
     window.show()
     txthist = textdisplayhistory()
     scan = Scandialog()
+    resize = resize()
     # Run the application then exit    
     sys.exit(app.exec_())
     
