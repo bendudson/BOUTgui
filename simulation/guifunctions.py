@@ -1,4 +1,4 @@
-import configparser, sys, os, time, difflib, shutil, re
+import configparser, sys, os, time, difflib, shutil, re, fileinput
 from datetime import *
 from PySide.QtGui import *
 from PySide.QtCore import *
@@ -6,7 +6,6 @@ from mainwindow import *
 from dialog import *
 from dialogcompare import *
 from guifunctions import *
-
 
 def comments(loadpath, newpath, notes):
     """
@@ -40,24 +39,7 @@ def parentDir(loadpath, newpath):
         record.write('Parent Directory:   ' + newpath + '   ' + TimeDate)
     record.close() 
 
-def removeTiming(loadpath):
-
-    """
- need to insert this into the run code(?) so that the file that gets sent to the temporary
- folder doesn't have the header timing
-    """
-    f = open(loadpath, 'r')
-    filedata = f.read()
-    f.close
-
-    newdata = filedata.replace('[timing]', 'hello')
-
-
-    with open(loadpath, 'w') as File:
-        File.write(newdata)
-        File.close
-
-
+        
 def addTiming(loadpath):
     """
     addTiming should be called every time a file is loaded into config parser to make sure
@@ -76,6 +58,15 @@ def addTiming(loadpath):
         filedata = "".join(filedata)
         f.write(filedata)
         f.close()
+
+def changeHeading(loadpath, oldheading, newheading):
+    # changes a specified heading and replaces it with the original so that the control file works
+    for line in fileinput.input(loadpath, inplace = 1):   
+        if oldheading in line:
+            line = line.replace(oldheading, newheading)
+        sys.stdout.write(line)
+
+
 
 def toStr(uni):
     codec = QTextCodec.codecForName("UTF-8")
