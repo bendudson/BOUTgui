@@ -18,7 +18,8 @@ nargs = len(sys.argv)
 runid = sys.argv[1] # First argument is the Archive ID to load
 restart = sys.argv[2]
 
-print runid
+    
+
 
 if nargs < 3:
     # prints help if arguements aren't given
@@ -62,14 +63,7 @@ for runfiles in inputfiles:
     filepath = os.path.join(runid, runfiles)
     if os.path.isfile(filepath):
         shutil.copy(filepath, directory)
-        
-######################################################################
-#ADD ANY CHANGES TO HEADINGS THAT NEED TO BE MADE HERE IF THEY COME UP
-######################################################################
-changeHeading(directory + '/BOUT.inp', '[timing]', '')
-changeHeading(directory + '/BOUT.inp', '[TWOfluid]', '[2fluid]')
-######################################################################   
-
+returnHeadings(directory + '/BOUT.inp')     
 cmd = exe + ' -d ' + directory + '/'
 #print("Command = '%s'" % cmd)
 if restart == 'y':

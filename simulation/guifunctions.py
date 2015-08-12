@@ -7,7 +7,68 @@ from dialog import *
 from dialogcompare import *
 from guifunctions import *
 
-def comments(loadpath, newpath, notes):
+
+
+def left(line, sep):
+        """
+        similar to the clean function, strips off the comments from a line
+        leaving just the important value
+        """
+        for s in sep:
+            line = line.split(s)[0]
+        return line.strip()
+    
+def right(line, sep):
+        """
+        different to left in that this keeps only the comments and none of the
+        important values
+        """
+        try:
+            for s in sep:
+                line = line.split(s)[1]
+            return line.strip()
+        except IndexError:
+            pass
+        
+def commentsTup(loadpath):
+        """
+        creates a list of tuples containing values and comments, effectivly splits up
+        the config file so that these parts can be treated seperatly. 
+        """
+        global tups
+        tups = []
+        with open(loadpath, 'r') as controlfile:
+            lines = controlfile.readlines()
+            for line in lines:
+                name = left(line, '#')
+                comment = '  #  ' + str(right(line, '#'))
+                if name != '':
+                    tup = (name, comment)
+                    tups.append(tup)
+        return tups
+
+def addComments(runid, tups):
+        """
+        reads through the config file and decides whether each option contains the value kept within
+        the tuple and whether that value already has a comment associated with it. If not it adds
+        the comment back onto the line - this makes up for the fact that the config parser deletes
+        comments.
+        """
+
+        for i in range(len(tups)):
+            try:
+                lineStart = tups[i][0].split()[0]
+                for line in fileinput.input(runid, inplace = 1):
+                    if lineStart in line and '#' not in line:
+                        if 'None' not in tups[i][1]:
+                            newline = line.rstrip() + '  ' + tups[i][1].rstrip() + '\n'
+                            line = line.replace(line, newline)
+                    sys.stdout.write(line)            
+            except IndexError:
+                pass
+
+
+def comments(loadpath, newpath, notes): ##(USERCOMMENTS NOT CONFIG FILE COMMENTS
     """
     finds the folder in the archive (or otherwise) of the file that has been loaded
     for editing and running. copies or creates a usernotes.ini file to store comments
@@ -66,7 +127,21 @@ def changeHeading(loadpath, oldheading, newheading):
             line = line.replace(oldheading, newheading)
         sys.stdout.write(line)
 
+def changeHeadings(loadpath):
+        addTiming(loadpath)
+        ######################################################################
+        #ADD ANY CHANGES TO HEADINGS FROM ORIGINAL TO WORK WITH PARSER
+        ######################################################################
+        changeHeading(loadpath, '[2fluid]', '[TWOfluid]')
+        ######################################################################
 
+def returnHeadings(loadpath):
+        ######################################################################
+        #RETURNS THE CONTROL FILE BACK TO HOW IT WAS BEFORE
+        ######################################################################
+        changeHeading(loadpath, '[timing]', '')
+        changeHeading(loadpath, '[TWOfluid]', '[2fluid]')
+        ######################################################################
 
 def toStr(uni):
     codec = QTextCodec.codecForName("UTF-8")

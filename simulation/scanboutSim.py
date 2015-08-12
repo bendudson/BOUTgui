@@ -21,6 +21,7 @@ archive = parser.get('archive', 'path')
 editor = parser.get('text editor', 'editor')
 MPIRUN = getmpirun()
 nargs = len(sys.argv)
+sys.stdout.write(str(nargs))
 
 
 # form of arguments: runid, key, subkey, initial, limit, increment, scanType, restart, initial2, limit2, key2, subkey2, increment2
@@ -29,7 +30,6 @@ nargs = len(sys.argv)
 runid = sys.argv[1] + '/'
 
 key = '[' + sys.argv[2] + ']'
-
 if key == '[timing]':
   key = ''
 
@@ -38,9 +38,10 @@ subkey = sys.argv[3]
 a = sys.argv[4]
 initial = float(a)
 
+                 
 b = sys.argv[5]
 limit =float(b)
-
+                 
 c = sys.argv[6]
 increment = float(c)
 
@@ -51,8 +52,10 @@ incrementType = sys.argv[8]
 
 scanType = sys.argv[9]
 
+
 # should a second set of scanning variable be given then this is called, these are ignored if not
-if nargs > 10:
+
+if str(sys.argv[14]) != 'NONE':
   initial2 = sys.argv[10]
   initial2 = float(initial2)
 
@@ -119,14 +122,9 @@ def scanPOWER(initial, limit, restart, loadpath, key, subkey, increment):
         filepath = os.path.join(loadfrom, runfiles)
         if os.path.isfile(filepath):
             shutil.copy(filepath, directory)
-
-    ######################################################################
-    #ADD ANY CHANGES TO HEADINGS THAT NEED TO BE MADE HERE IF THEY COME UP
-    ######################################################################
-    changeHeading(directory + '/BOUT.inp', '[timing]', '')
-    changeHeading(directory + '/BOUT.inp', '[TWOfluid]', '[2fluid]')
-    ######################################################################
-    
+            
+    returnHeadings(directory + '/BOUT.inp')
+   
     #npro = raw_input('N.o of processors to use: ')
     cmd = exe + ' -d ' + directory + '/'
     print("Command = '%s'" % cmd)
@@ -188,16 +186,28 @@ def run2(initial, limit, restart, loadpath, key, subkey, increment, initial2, li
 
 
         if scanType == 'power':
-            # uses the limit of the first variable as the overall limit. 
-            while newinitial1 < limit1:
-              a = scanPOWER(newinitial1, limit, restart, loadpath, key, subkey, increment)
-              newinitial1 = float(a)
-              createfolder(subkey, newinitial1)
-              # For every increase in initial1 then initiail2 is also run and increased in step
-              b = scanPOWER(newinitial2,limit2,restart, loadpath, key2, subkey2, increment2)
-              newinitial2 = float(b)
-              createfolder(subkey2, newinitial2)
-              i += 1
+            # uses the limit of the first variable as the overall limit.
+            if initial < limit1:
+                while newinitial1 < limit1:
+                    a = scanPOWER(newinitial1, limit, restart, loadpath, key, subkey, increment)
+                    newinitial1 = float(a)
+                    createfolder(subkey, newinitial1)
+                    # For every increase in initial1 then initiail2 is also run and increased in step
+                    b = scanPOWER(newinitial2,limit2,restart, loadpath, key2, subkey2, increment2)
+                    newinitial2 = float(b)
+                    createfolder(subkey2, newinitial2)
+                    i += 1
+                  
+            else:
+                while newinitial1 > limit1:
+                    a = scanPOWER(newinitial1, limit, restart, loadpath, key, subkey, increment)
+                    newinitial1 = float(a)
+                    createfolder(subkey, newinitial1)
+                    # For every increase in initial1 then initiail2 is also run and increased in step
+                    b = scanPOWER(newinitial2,limit2,restart, loadpath, key2, subkey2, increment2)
+                    newinitial2 = float(b)
+                    createfolder(subkey2, newinitial2)
+                    i += 1
 
               
         if scanType == 'full':
@@ -205,29 +215,56 @@ def run2(initial, limit, restart, loadpath, key, subkey, increment, initial2, li
             a = scanPOWER(newinitial1, limit, restart, loadpath, key, subkey, increment)
             newinitial1 = float(a)
             createfolder(subkey, newinitial1)
-            
-            while newinitial1 < limit1:
-                # the main while loop is used to slowly step up the first parameter by increment1
+            if initial < limit1:
+                while newinitial1 < limit1:
+                    # the main while loop is used to slowly step up the first parameter by increment1
+                    newinitial2 = initial2
+                    # newinitial2 has to be reset on each loop
+                    while newinitial2 < limit2:
+                      # this while loop then runs the second parameter from initial2 to limit2 with all increment steps 
+                        b = scanPOWER(newinitial2,limit2,restart, loadpath, key2, subkey2, increment2)
+                        newinitial2 = float(b)
+                        createfolder(subkey2, newinitial2)
+                        i += 1
+                    # this then runs the next step of the first parameter and resets i
+                    a = scanPOWER(newinitial1, limit, restart, loadpath, key, subkey, increment)
+                    newinitial1 = float(a)
+                    createfolder(subkey, newinitial1)
+                    i = 1
+                #  this final loop exists because the final test of the second parameter didn't happen as the criteria of main while loop has been met
                 newinitial2 = initial2
-                # newinitial2 has to be reset on each loop
+                
+            else:
+                while newinitial1 > limit1:
+                    # the main while loop is used to slowly step up the first parameter by increment1
+                    newinitial2 = initial2
+                    # newinitial2 has to be reset on each loop
+                    while newinitial2 > limit2:
+                      # this while loop then runs the second parameter from initial2 to limit2 with all increment steps 
+                        b = scanPOWER(newinitial2,limit2,restart, loadpath, key2, subkey2, increment2)
+                        newinitial2 = float(b)
+                        createfolder(subkey2, newinitial2)
+                        i += 1
+                    # this then runs the next step of the first parameter and resets i
+                    a = scanPOWER(newinitial1, limit, restart, loadpath, key, subkey, increment)
+                    newinitial1 = float(a)
+                    createfolder(subkey, newinitial1)
+                    i = 1
+                #  this final loop exists because the final test of the second parameter didn't happen as the criteria of main while loop has been met
+                newinitial2 = initial2
+            if newinitial2 < limit2: 
                 while newinitial2 < limit2:
-                  # this while loop then runs the second parameter from initial2 to limit2 with all increment steps 
                     b = scanPOWER(newinitial2,limit2,restart, loadpath, key2, subkey2, increment2)
                     newinitial2 = float(b)
                     createfolder(subkey2, newinitial2)
                     i += 1
-                # this then runs the next step of the first parameter and resets i
-                a = scanPOWER(newinitial1, limit, restart, loadpath, key, subkey, increment)
-                newinitial1 = float(a)
-                createfolder(subkey, newinitial1)
-                i = 1
-            #  this final loop exists because the final test of the second parameter didn't happen as the criteria of main while loop has been met
-            newinitial2 = initial2
-            while newinitial2 < limit2:
-                b = scanPOWER(newinitial2,limit2,restart, loadpath, key2, subkey2, increment2)
-                newinitial2 = float(b)
-                createfolder(subkey2, newinitial2)
-                i += 1
+            else:
+                while newinitial2 < limit2:
+                    b = scanPOWER(newinitial2,limit2,restart, loadpath, key2, subkey2, increment2)
+                    newinitial2 = float(b)
+                    createfolder(subkey2, newinitial2)
+                    i += 1
+
 
 
 def run1(initial, limit, restart, loadpath, key, subkey, increment):
@@ -236,12 +273,18 @@ def run1(initial, limit, restart, loadpath, key, subkey, increment):
         limit1 = limit
         global i
         i =1
-        while newinitial1 < limit1:
-          a = scanPOWER(newinitial1, limit, restart, loadpath, key, subkey, increment)
-          newinitial1 = float(a)
-          createfolder(subkey, newinitial1)
-          i += 1
-      
+        if newinitial1 < limit1:
+            while newinitial1 < limit1:
+              a = scanPOWER(newinitial1, limit, restart, loadpath, key, subkey, increment)
+              newinitial1 = float(a)
+              createfolder(subkey, newinitial1)
+              i += 1
+        else:
+            while newinitial1 > limit1:
+              a = scanPOWER(newinitial1, limit, restart, loadpath, key, subkey, increment)
+              newinitial1 = float(a)
+              createfolder(subkey, newinitial1)
+              i += 1      
         
 def createfolder(subkey, initial):      
     inputfiles = os.listdir(directory)
@@ -250,6 +293,8 @@ def createfolder(subkey, initial):
     archive = (os.path.dirname(os.path.dirname(runid)))
     # creates the name of the new folder using the subkey and value of that subkey used in that simulation
     newfolder = str(archive) + '/' + str(subkey) + '.' + str(initial) + '.' + str(x) + '/'
+
+
     while os.path.isdir(newfolder):
         x = x + 1
         newfolder = str(archive) + '/' + str(subkey) + '.' + str(initial) + '.' + str(x) + '/'
@@ -273,7 +318,7 @@ def createfolder(subkey, initial):
     loadfrom = newfolder  
 
 try:
-  if limit2 != '':
+  if sys.argv[14]!= 'NONE':
     run2(initial, limit, restart, loadpath, key, subkey, increment, initial2, limit2, key2, subkey2, increment2, scanType)
   else:
     run1(initial, limit, restart, loadpath, key, subkey, increment)

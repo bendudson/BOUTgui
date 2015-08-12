@@ -1,0 +1,994 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>MainWindow</class>
+ <widget class="QMainWindow" name="MainWindow">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>1465</width>
+    <height>828</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>Program Name</string>
+  </property>
+  <widget class="QWidget" name="centralwidget">
+   <layout class="QGridLayout" name="gridLayout_2">
+    <item row="0" column="0">
+     <widget class="QTabWidget" name="tabWidget">
+      <property name="toolTip">
+       <string/>
+      </property>
+      <property name="currentIndex">
+       <number>0</number>
+      </property>
+      <property name="movable">
+       <bool>false</bool>
+      </property>
+      <widget class="QWidget" name="Load">
+       <property name="enabled">
+        <bool>true</bool>
+       </property>
+       <attribute name="title">
+        <string>Load</string>
+       </attribute>
+       <widget class="QPushButton" name="pushButton">
+        <property name="geometry">
+         <rect>
+          <x>1330</x>
+          <y>710</y>
+          <width>81</width>
+          <height>25</height>
+         </rect>
+        </property>
+        <property name="toolTip">
+         <string>Loads the selected file for simualtion after editing</string>
+        </property>
+        <property name="text">
+         <string>Load</string>
+        </property>
+       </widget>
+       <widget class="QTableWidget" name="tableWidget">
+        <property name="geometry">
+         <rect>
+          <x>10</x>
+          <y>20</y>
+          <width>1411</width>
+          <height>681</height>
+         </rect>
+        </property>
+        <property name="alternatingRowColors">
+         <bool>true</bool>
+        </property>
+        <property name="selectionMode">
+         <enum>QAbstractItemView::SingleSelection</enum>
+        </property>
+        <property name="selectionBehavior">
+         <enum>QAbstractItemView::SelectRows</enum>
+        </property>
+        <property name="columnCount">
+         <number>4</number>
+        </property>
+        <attribute name="horizontalHeaderShowSortIndicator" stdset="0">
+         <bool>false</bool>
+        </attribute>
+        <attribute name="horizontalHeaderStretchLastSection">
+         <bool>true</bool>
+        </attribute>
+        <attribute name="verticalHeaderStretchLastSection">
+         <bool>false</bool>
+        </attribute>
+        <column>
+         <property name="text">
+          <string>File Path</string>
+         </property>
+         <property name="toolTip">
+          <string>Click to sort by file path</string>
+         </property>
+        </column>
+        <column>
+         <property name="text">
+          <string>Date Created</string>
+         </property>
+         <property name="toolTip">
+          <string>Click to sort by Date Created</string>
+         </property>
+        </column>
+        <column>
+         <property name="text">
+          <string>Date Modified</string>
+         </property>
+         <property name="toolTip">
+          <string>Click to sort by Date Modified</string>
+         </property>
+        </column>
+        <column>
+         <property name="text">
+          <string>Comments</string>
+         </property>
+        </column>
+       </widget>
+       <widget class="QLabel" name="archivePath">
+        <property name="geometry">
+         <rect>
+          <x>177</x>
+          <y>718</y>
+          <width>951</width>
+          <height>20</height>
+         </rect>
+        </property>
+        <property name="text">
+         <string>None loaded or bad file path, click File -&gt; Archive Location to load</string>
+        </property>
+       </widget>
+       <widget class="QLabel" name="label_18">
+        <property name="geometry">
+         <rect>
+          <x>20</x>
+          <y>720</y>
+          <width>201</width>
+          <height>16</height>
+         </rect>
+        </property>
+        <property name="text">
+         <string>Current Archive Folder =</string>
+        </property>
+       </widget>
+      </widget>
+      <widget class="QWidget" name="tab_2">
+       <attribute name="title">
+        <string>Change Inputs</string>
+       </attribute>
+       <widget class="QPushButton" name="pushButton_2">
+        <property name="geometry">
+         <rect>
+          <x>920</x>
+          <y>687</y>
+          <width>75</width>
+          <height>25</height>
+         </rect>
+        </property>
+        <property name="text">
+         <string>Write to file</string>
+        </property>
+       </widget>
+       <widget class="QPushButton" name="pushButton_3">
+        <property name="geometry">
+         <rect>
+          <x>1250</x>
+          <y>687</y>
+          <width>161</width>
+          <height>25</height>
+         </rect>
+        </property>
+        <property name="text">
+         <string>Run Simulation</string>
+        </property>
+       </widget>
+       <widget class="QCheckBox" name="checkBox">
+        <property name="geometry">
+         <rect>
+          <x>1174</x>
+          <y>691</y>
+          <width>71</width>
+          <height>20</height>
+         </rect>
+        </property>
+        <property name="text">
+         <string>Restart</string>
+        </property>
+       </widget>
+       <widget class="QLabel" name="fileLabel">
+        <property name="geometry">
+         <rect>
+          <x>100</x>
+          <y>723</y>
+          <width>771</width>
+          <height>16</height>
+         </rect>
+        </property>
+        <property name="text">
+         <string>None</string>
+        </property>
+       </widget>
+       <widget class="QLabel" name="label_15">
+        <property name="geometry">
+         <rect>
+          <x>20</x>
+          <y>723</y>
+          <width>91</width>
+          <height>16</height>
+         </rect>
+        </property>
+        <property name="text">
+         <string>Open File =</string>
+        </property>
+       </widget>
+       <widget class="QGroupBox" name="groupBox_18">
+        <property name="geometry">
+         <rect>
+          <x>913</x>
+          <y>532</y>
+          <width>501</width>
+          <height>151</height>
+         </rect>
+        </property>
+        <property name="title">
+         <string>Comments</string>
+        </property>
+        <widget class="QPlainTextEdit" name="plainTextEdit">
+         <property name="geometry">
+          <rect>
+           <x>4</x>
+           <y>15</y>
+           <width>491</width>
+           <height>131</height>
+          </rect>
+         </property>
+        </widget>
+       </widget>
+       <widget class="QPushButton" name="runScanningSimulation">
+        <property name="geometry">
+         <rect>
+          <x>1250</x>
+          <y>715</y>
+          <width>161</width>
+          <height>25</height>
+         </rect>
+        </property>
+        <property name="toolTip">
+         <string>Runs a series of simulations given an increment, a starting variable and a final variable</string>
+        </property>
+        <property name="text">
+         <string>Run Scanning Simulation</string>
+        </property>
+       </widget>
+       <widget class="QLabel" name="label_17">
+        <property name="geometry">
+         <rect>
+          <x>20</x>
+          <y>700</y>
+          <width>201</width>
+          <height>16</height>
+         </rect>
+        </property>
+        <property name="text">
+         <string>Current Simulation Code File = </string>
+        </property>
+       </widget>
+       <widget class="QLabel" name="simulationFile">
+        <property name="geometry">
+         <rect>
+          <x>210</x>
+          <y>700</y>
+          <width>771</width>
+          <height>16</height>
+         </rect>
+        </property>
+        <property name="text">
+         <string>None</string>
+        </property>
+       </widget>
+      </widget>
+      <widget class="QWidget" name="tab">
+       <attribute name="title">
+        <string>Output Stream</string>
+       </attribute>
+       <widget class="QTextBrowser" name="outputStream">
+        <property name="geometry">
+         <rect>
+          <x>10</x>
+          <y>10</y>
+          <width>1401</width>
+          <height>691</height>
+         </rect>
+        </property>
+       </widget>
+       <widget class="QPushButton" name="stopSimulation">
+        <property name="geometry">
+         <rect>
+          <x>10</x>
+          <y>710</y>
+          <width>1401</width>
+          <height>25</height>
+         </rect>
+        </property>
+        <property name="text">
+         <string>Stop Simulation</string>
+        </property>
+       </widget>
+      </widget>
+      <widget class="QWidget" name="tab_3">
+       <attribute name="title">
+        <string>Graphing</string>
+       </attribute>
+       <widget class="QComboBox" name="variableCombo">
+        <property name="geometry">
+         <rect>
+          <x>180</x>
+          <y>40</y>
+          <width>81</width>
+          <height>22</height>
+         </rect>
+        </property>
+        <property name="toolTip">
+         <string>Choose what variable to plot</string>
+        </property>
+        <item>
+         <property name="text">
+          <string>Ne</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>NVi</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>P</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>Nn</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>NVn</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>Pn</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>t</string>
+         </property>
+        </item>
+       </widget>
+       <widget class="QSpinBox" name="tspin">
+        <property name="geometry">
+         <rect>
+          <x>270</x>
+          <y>40</y>
+          <width>53</width>
+          <height>22</height>
+         </rect>
+        </property>
+        <property name="toolTip">
+         <string>Time value</string>
+        </property>
+        <property name="minimum">
+         <number>-10000000</number>
+        </property>
+        <property name="maximum">
+         <number>10000000</number>
+        </property>
+        <property name="value">
+         <number>0</number>
+        </property>
+       </widget>
+       <widget class="QPushButton" name="createGraph">
+        <property name="geometry">
+         <rect>
+          <x>700</x>
+          <y>70</y>
+          <width>101</width>
+          <height>25</height>
+         </rect>
+        </property>
+        <property name="toolTip">
+         <string>Display the data selected as a graph</string>
+        </property>
+        <property name="text">
+         <string>Create Graph</string>
+        </property>
+       </widget>
+       <widget class="QSpinBox" name="xspin">
+        <property name="geometry">
+         <rect>
+          <x>330</x>
+          <y>40</y>
+          <width>53</width>
+          <height>22</height>
+         </rect>
+        </property>
+        <property name="toolTip">
+         <string>x value</string>
+        </property>
+        <property name="minimum">
+         <number>-10000000</number>
+        </property>
+        <property name="maximum">
+         <number>10000000</number>
+        </property>
+       </widget>
+       <widget class="QCheckBox" name="tall">
+        <property name="geometry">
+         <rect>
+          <x>270</x>
+          <y>70</y>
+          <width>84</width>
+          <height>20</height>
+         </rect>
+        </property>
+        <property name="toolTip">
+         <string>Select all of time </string>
+        </property>
+        <property name="text">
+         <string>All</string>
+        </property>
+       </widget>
+       <widget class="QLabel" name="label_16">
+        <property name="geometry">
+         <rect>
+          <x>20</x>
+          <y>40</y>
+          <width>151</width>
+          <height>16</height>
+         </rect>
+        </property>
+        <property name="text">
+         <string>Inputs variable(t,x,y,z) :</string>
+        </property>
+       </widget>
+       <widget class="QSpinBox" name="zspin">
+        <property name="geometry">
+         <rect>
+          <x>450</x>
+          <y>40</y>
+          <width>53</width>
+          <height>22</height>
+         </rect>
+        </property>
+        <property name="toolTip">
+         <string>z value</string>
+        </property>
+        <property name="minimum">
+         <number>-1000000</number>
+        </property>
+        <property name="maximum">
+         <number>10000000</number>
+        </property>
+       </widget>
+       <widget class="QSpinBox" name="yspin">
+        <property name="geometry">
+         <rect>
+          <x>390</x>
+          <y>40</y>
+          <width>53</width>
+          <height>22</height>
+         </rect>
+        </property>
+        <property name="toolTip">
+         <string>y value</string>
+        </property>
+        <property name="minimum">
+         <number>-999900</number>
+        </property>
+        <property name="maximum">
+         <number>100000000</number>
+        </property>
+       </widget>
+       <widget class="QCheckBox" name="xall">
+        <property name="geometry">
+         <rect>
+          <x>330</x>
+          <y>70</y>
+          <width>84</width>
+          <height>20</height>
+         </rect>
+        </property>
+        <property name="toolTip">
+         <string>Select all of x </string>
+        </property>
+        <property name="text">
+         <string>All</string>
+        </property>
+       </widget>
+       <widget class="QPushButton" name="valueButton">
+        <property name="geometry">
+         <rect>
+          <x>400</x>
+          <y>107</y>
+          <width>101</width>
+          <height>25</height>
+         </rect>
+        </property>
+        <property name="toolTip">
+         <string>Finds the value of the point specified by the inputs ignoring 'all' selections</string>
+        </property>
+        <property name="text">
+         <string>Value at Point</string>
+        </property>
+       </widget>
+       <widget class="QLineEdit" name="valueLine">
+        <property name="geometry">
+         <rect>
+          <x>180</x>
+          <y>107</y>
+          <width>211</width>
+          <height>21</height>
+         </rect>
+        </property>
+        <property name="text">
+         <string/>
+        </property>
+       </widget>
+       <widget class="QPushButton" name="pushButton_7">
+        <property name="geometry">
+         <rect>
+          <x>700</x>
+          <y>40</y>
+          <width>101</width>
+          <height>25</height>
+         </rect>
+        </property>
+        <property name="toolTip">
+         <string>Imports the data from the current folder to be used for analysis</string>
+        </property>
+        <property name="text">
+         <string>Collect Data</string>
+        </property>
+       </widget>
+       <widget class="QPushButton" name="divideByButton">
+        <property name="geometry">
+         <rect>
+          <x>400</x>
+          <y>137</y>
+          <width>101</width>
+          <height>25</height>
+         </rect>
+        </property>
+        <property name="toolTip">
+         <string>Selects a second point to divide the first by</string>
+        </property>
+        <property name="text">
+         <string>Divide by</string>
+        </property>
+       </widget>
+       <widget class="QLineEdit" name="divideByLine">
+        <property name="geometry">
+         <rect>
+          <x>180</x>
+          <y>137</y>
+          <width>211</width>
+          <height>21</height>
+         </rect>
+        </property>
+       </widget>
+       <widget class="QLineEdit" name="answerLine">
+        <property name="geometry">
+         <rect>
+          <x>180</x>
+          <y>167</y>
+          <width>211</width>
+          <height>21</height>
+         </rect>
+        </property>
+       </widget>
+       <widget class="QLabel" name="label_19">
+        <property name="geometry">
+         <rect>
+          <x>20</x>
+          <y>110</y>
+          <width>151</width>
+          <height>16</height>
+         </rect>
+        </property>
+        <property name="text">
+         <string>Value of Point:</string>
+        </property>
+       </widget>
+       <widget class="QLabel" name="label_20">
+        <property name="geometry">
+         <rect>
+          <x>20</x>
+          <y>140</y>
+          <width>151</width>
+          <height>16</height>
+         </rect>
+        </property>
+        <property name="text">
+         <string>Value to Divide By:</string>
+        </property>
+       </widget>
+       <widget class="QLabel" name="label_21">
+        <property name="geometry">
+         <rect>
+          <x>20</x>
+          <y>167</y>
+          <width>151</width>
+          <height>16</height>
+         </rect>
+        </property>
+        <property name="text">
+         <string>Answer: </string>
+        </property>
+       </widget>
+       <widget class="QLabel" name="collectedLabel">
+        <property name="geometry">
+         <rect>
+          <x>170</x>
+          <y>8</y>
+          <width>771</width>
+          <height>16</height>
+         </rect>
+        </property>
+        <property name="text">
+         <string>None</string>
+        </property>
+       </widget>
+       <widget class="QLabel" name="label_22">
+        <property name="geometry">
+         <rect>
+          <x>20</x>
+          <y>8</y>
+          <width>161</width>
+          <height>16</height>
+         </rect>
+        </property>
+        <property name="toolTip">
+         <string>The current source of data in use</string>
+        </property>
+        <property name="text">
+         <string>Data Collected From = </string>
+        </property>
+       </widget>
+       <widget class="QPushButton" name="saveDefaultButton">
+        <property name="geometry">
+         <rect>
+          <x>520</x>
+          <y>70</y>
+          <width>101</width>
+          <height>25</height>
+         </rect>
+        </property>
+        <property name="toolTip">
+         <string>Save current settings so they can be used again</string>
+        </property>
+        <property name="text">
+         <string>Save Default</string>
+        </property>
+       </widget>
+       <widget class="QComboBox" name="defaultCombo">
+        <property name="geometry">
+         <rect>
+          <x>520</x>
+          <y>40</y>
+          <width>171</width>
+          <height>22</height>
+         </rect>
+        </property>
+        <property name="toolTip">
+         <string>Select default settings</string>
+        </property>
+        <item>
+         <property name="text">
+          <string>None</string>
+         </property>
+        </item>
+       </widget>
+       <widget class="QCheckBox" name="yall">
+        <property name="geometry">
+         <rect>
+          <x>390</x>
+          <y>70</y>
+          <width>84</width>
+          <height>20</height>
+         </rect>
+        </property>
+        <property name="toolTip">
+         <string>Select all of y</string>
+        </property>
+        <property name="text">
+         <string>All</string>
+        </property>
+       </widget>
+       <widget class="QCheckBox" name="zall">
+        <property name="geometry">
+         <rect>
+          <x>450</x>
+          <y>70</y>
+          <width>84</width>
+          <height>20</height>
+         </rect>
+        </property>
+        <property name="toolTip">
+         <string>Select all of z</string>
+        </property>
+        <property name="text">
+         <string>All</string>
+        </property>
+       </widget>
+       <widget class="QTextEdit" name="textOutput">
+        <property name="geometry">
+         <rect>
+          <x>22</x>
+          <y>430</y>
+          <width>661</width>
+          <height>261</height>
+         </rect>
+        </property>
+        <property name="toolTip">
+         <string>The printed output from commands</string>
+        </property>
+        <property name="readOnly">
+         <bool>true</bool>
+        </property>
+       </widget>
+       <widget class="QLabel" name="label_64">
+        <property name="geometry">
+         <rect>
+          <x>20</x>
+          <y>700</y>
+          <width>64</width>
+          <height>25</height>
+         </rect>
+        </property>
+        <property name="text">
+         <string>Command:</string>
+        </property>
+       </widget>
+       <widget class="QTableWidget" name="dataTable">
+        <property name="geometry">
+         <rect>
+          <x>23</x>
+          <y>210</y>
+          <width>661</width>
+          <height>221</height>
+         </rect>
+        </property>
+        <property name="toolTip">
+         <string>Table showing the current variables and imported modules</string>
+        </property>
+        <property name="alternatingRowColors">
+         <bool>true</bool>
+        </property>
+        <property name="selectionMode">
+         <enum>QAbstractItemView::MultiSelection</enum>
+        </property>
+        <property name="selectionBehavior">
+         <enum>QAbstractItemView::SelectRows</enum>
+        </property>
+        <property name="showGrid">
+         <bool>false</bool>
+        </property>
+        <property name="gridStyle">
+         <enum>Qt::SolidLine</enum>
+        </property>
+        <attribute name="horizontalHeaderStretchLastSection">
+         <bool>true</bool>
+        </attribute>
+        <attribute name="verticalHeaderDefaultSectionSize">
+         <number>20</number>
+        </attribute>
+        <column>
+         <property name="text">
+          <string>Name</string>
+         </property>
+        </column>
+        <column>
+         <property name="text">
+          <string>Source</string>
+         </property>
+        </column>
+        <column>
+         <property name="text">
+          <string>Trace</string>
+         </property>
+        </column>
+        <column>
+         <property name="text">
+          <string>Comments</string>
+         </property>
+        </column>
+       </widget>
+       <widget class="QPushButton" name="commandButton">
+        <property name="geometry">
+         <rect>
+          <x>610</x>
+          <y>700</y>
+          <width>75</width>
+          <height>25</height>
+         </rect>
+        </property>
+        <property name="toolTip">
+         <string>Run current command</string>
+        </property>
+        <property name="text">
+         <string>Run</string>
+        </property>
+       </widget>
+       <widget class="QLabel" name="collectedLabel_2">
+        <property name="geometry">
+         <rect>
+          <x>520</x>
+          <y>20</y>
+          <width>771</width>
+          <height>16</height>
+         </rect>
+        </property>
+        <property name="text">
+         <string>Load a default input selection</string>
+        </property>
+       </widget>
+       <widget class="QFrame" name="frame">
+        <property name="geometry">
+         <rect>
+          <x>700</x>
+          <y>104</y>
+          <width>701</width>
+          <height>621</height>
+         </rect>
+        </property>
+        <property name="frameShape">
+         <enum>QFrame::StyledPanel</enum>
+        </property>
+        <property name="frameShadow">
+         <enum>QFrame::Raised</enum>
+        </property>
+       </widget>
+       <widget class="ConsoleWidget" name="commandInput">
+        <property name="geometry">
+         <rect>
+          <x>89</x>
+          <y>702</y>
+          <width>511</width>
+          <height>21</height>
+         </rect>
+        </property>
+        <property name="toolTip">
+         <string>Enter commands as if into a python command line</string>
+        </property>
+       </widget>
+      </widget>
+     </widget>
+    </item>
+   </layout>
+  </widget>
+  <widget class="QMenuBar" name="menubar">
+   <property name="geometry">
+    <rect>
+     <x>0</x>
+     <y>0</y>
+     <width>1465</width>
+     <height>20</height>
+    </rect>
+   </property>
+   <widget class="QMenu" name="menuFile">
+    <property name="title">
+     <string>File</string>
+    </property>
+    <addaction name="separator"/>
+    <addaction name="actionArchive"/>
+    <addaction name="actionSimulation_Code"/>
+    <addaction name="actionCreate_Example"/>
+    <addaction name="separator"/>
+    <addaction name="actionFileHistory"/>
+    <addaction name="actionCompare"/>
+    <addaction name="separator"/>
+    <addaction name="actionStop_Simulation"/>
+    <addaction name="separator"/>
+    <addaction name="actionExit"/>
+   </widget>
+   <widget class="QMenu" name="menuHelp">
+    <property name="title">
+     <string>Help</string>
+    </property>
+    <addaction name="actionHelp"/>
+   </widget>
+   <widget class="QMenu" name="menuView">
+    <property name="title">
+     <string>View</string>
+    </property>
+    <addaction name="actionPositioning"/>
+   </widget>
+   <addaction name="menuFile"/>
+   <addaction name="menuView"/>
+   <addaction name="menuHelp"/>
+  </widget>
+  <widget class="QStatusBar" name="statusbar"/>
+  <action name="actionCompare">
+   <property name="text">
+    <string>Compare</string>
+   </property>
+   <property name="toolTip">
+    <string>Once a file has been initially loaded this can be selected to compare differences between a second file</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+Alt+C</string>
+   </property>
+  </action>
+  <action name="actionFileHistory">
+   <property name="text">
+    <string>File History</string>
+   </property>
+   <property name="toolTip">
+    <string>Brings up the automatically created history file which details the files family tree</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+H</string>
+   </property>
+  </action>
+  <action name="actionExit">
+   <property name="text">
+    <string>Exit</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+Q</string>
+   </property>
+  </action>
+  <action name="actionHelp">
+   <property name="text">
+    <string>Help</string>
+   </property>
+   <property name="shortcut">
+    <string>F11</string>
+   </property>
+  </action>
+  <action name="actionStop_Simulation">
+   <property name="text">
+    <string>Stop Simulation</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+C</string>
+   </property>
+  </action>
+  <action name="actionPositioning">
+   <property name="text">
+    <string>Edit Input Positioning</string>
+   </property>
+   <property name="toolTip">
+    <string>Change the positioning of the input boxes</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+B</string>
+   </property>
+  </action>
+  <action name="actionArchive">
+   <property name="text">
+    <string>Archive Location</string>
+   </property>
+   <property name="toolTip">
+    <string>This allows the selection of folder to use as an archive</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+O</string>
+   </property>
+  </action>
+  <action name="actionCreate_Example">
+   <property name="text">
+    <string>Create Example</string>
+   </property>
+   <property name="toolTip">
+    <string>This creates an example folder in the selected archive</string>
+   </property>
+  </action>
+  <action name="actionSimulation_Code">
+   <property name="text">
+    <string>Simulation Code</string>
+   </property>
+   <property name="toolTip">
+    <string>This allows the code used for simulations to be changed, so different models can be used</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+L</string>
+   </property>
+  </action>
+ </widget>
+ <customwidgets>
+  <customwidget>
+   <class>ConsoleWidget</class>
+   <extends>QLineEdit</extends>
+   <header>console_widget.h</header>
+  </customwidget>
+ </customwidgets>
+ <resources/>
+ <connections/>
+</ui>

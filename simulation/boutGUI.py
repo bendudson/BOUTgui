@@ -50,6 +50,8 @@ parser2 = configparser.ConfigParser()
 ###################################################################
 #   APPRARANCE
  # used to get the values for the automatic creation of input buttons, they are taken from the config file
+
+
 with open(config) as fp:
     position = configparser.ConfigParser()
     position.optionxform = str
@@ -79,14 +81,8 @@ the 2fluid heading will need changing. This will at some point be automated.
 archive = position.get('archive', 'path')
 codeFile = position.get('exe', 'path')
 loadpath = currentDir + '/config/BOUT.inp'
-addTiming(loadpath)
-
-######################################################################
-#ADD ANY CHANGES TO HEADINGS THAT NEED TO BE MADE HERE IF THEY COME UP
-######################################################################
-changeHeading(loadpath, '[2fluid]', '[TWOfluid]')
-######################################################################
-
+changeHeadings(loadpath)
+tups = commentsTup(loadpath)
 with open(loadpath) as fp:
     parser = configparser.ConfigParser()
     parser.optionxform = str
@@ -111,6 +107,11 @@ class Worker(QThread):
               self.outputStream = outputStream
               self.exiting = False
               window.tabWidget.setTabEnabled(2, True)
+              # reattaches comments that would have been lost because of the config parser, tups is the list of tuples that they are saved within
+              global tups
+              addComments(self.path + 'BOUT.inp', tups)
+                  
+
 
       def run(self):
           # proc runs the simulation
@@ -162,9 +163,11 @@ class scanWorker(QThread):
               self.outputStream = outputStream
               self.exiting = False
               window.tabWidget.setTabEnabled(2, True)
+              print path, key, subkey, initial, limit, increment, restart, incrementType, scanType, key2, subkey2, initial2, limit2, increment2
 
       def run(self):
           # proc runs the simulation
+          global proc
           proc = subprocess.Popen([currentDir + '/scanboutSim.py', str(self.path), str(self.key), str(self.subkey), str(self.initial), str(self.limit), str(self.increment), str(self.restart), str(self.incrementType), str(self.scanType), str(self.initial2), str(self.limit2), str(self.key2),str(self.subkey2),str(self.increment2)],
                                    shell = False, stdout = subprocess.PIPE, stderr = subprocess.PIPE)
           running = True
@@ -498,10 +501,12 @@ class MainWindow(QtGui.QMainWindow, Ui_MainWindow):
     def showResize(self):
         resize.show()
 
+##################################################################################################################
+####################################### AUTOMATIC CREATION OF INPUTS STARTS ######################################
     def updateControls(self, inpfile):
-        global inputsLst, sectionLst, inputsTupLst, groupbox, parser
+        global inputsLst, sectionLst, inputsTupLst, groupbox, parser, tups
         
-        self.delete()
+        #self.delete()
         inputsLst = []
         sectionLst = []
         inputsTupLst = []
@@ -510,16 +515,10 @@ class MainWindow(QtGui.QMainWindow, Ui_MainWindow):
         folder = re.sub('/BOUT.inp', '', inpfile)
         text = open(folder + '/usernotes.ini').read()
         self.plainTextEdit.setPlainText(text)
-        
+        tups = commentsTup(inpfile)
         with open(inpfile) as fp:
             parser = configparser.ConfigParser()
-            addTiming(inpfile)
-            
-            ######################################################################
-            #ADD ANY CHANGES TO HEADINGS THAT NEED TO BE MADE HERE IF THEY COME UP
-            ######################################################################
-            changeHeading(inpfile, '[2fluid]', '[TWOfluid]')
-            ######################################################################
+            changeHeadings(inpfile)
             
             parser.optionxform = str
             parser.readfp(fp)
@@ -667,6 +666,15 @@ class MainWindow(QtGui.QMainWindow, Ui_MainWindow):
         exec mycode
         mycode = 'self.label = QtGui.QLabel(self.' +section + ')'
         exec mycode
+
+        # adds an automatic tooltip based on the comments in the control file
+        for i in range(len(tups)):
+            line = tups[i][0].split()[0]
+            if line == subkey:
+                tooltip = right(str(tups[i][1]), '#')
+                if tooltip != 'None':
+                  mycode = 'self.' +objectName + '.setToolTip(tooltip)'
+                  exec mycode     
         #labels
         self.label.setGeometry(QtCore.QRect(xLabel, sepInput*n, labelWidth, 15))
         self.label.setObjectName("label_n")
@@ -701,6 +709,14 @@ class MainWindow(QtGui.QMainWindow, Ui_MainWindow):
             mycode = 'self.' + objectName + '.setCurrentIndex(1)'
             exec mycode
             
+        # adds an automatic tooltip based on the comments in the control file
+        for i in range(len(tups)):
+            line = tups[i][0].split()[0]
+            if line == subkey:
+                tooltip = right(str(tups[i][1]), '#')
+                if tooltip != 'None':
+                  mycode = 'self.' +objectName + '.setToolTip(tooltip)'
+                  exec mycode            
         #labels
         self.label.setGeometry(QtCore.QRect(xLabel, sepInput*n, labelWidth, 15))
         self.label.setObjectName("label_n")
@@ -731,6 +747,15 @@ class MainWindow(QtGui.QMainWindow, Ui_MainWindow):
         exec mycode
         mycode = 'self.label = QtGui.QLabel(self.' +section + ')'
         exec mycode
+        
+        # adds an automatic tooltip based on the comments in the control file
+        for i in range(len(tups)):
+            line = tups[i][0].split()[0]
+            if line == subkey:
+                tooltip = right(str(tups[i][1]), '#')
+                if tooltip != 'None':
+                  mycode = 'self.' +objectName + '.setToolTip(tooltip)'
+                  exec mycode     
         # labels
         self.label.setGeometry(QtCore.QRect(xLabel, sepInput*n, labelWidth, 15))
         self.label.setObjectName("label_n")
@@ -757,6 +782,15 @@ class MainWindow(QtGui.QMainWindow, Ui_MainWindow):
         exec mycode
         mycode = 'self.label = QtGui.QLabel(self.' +section + ')'
         exec mycode
+        
+        # adds an automatic tooltip based on the comments in the control file
+        for i in range(len(tups)):
+            line = tups[i][0].split()[0]
+            if line == subkey:
+                tooltip = right(str(tups[i][1]), '#')
+                if tooltip != 'None':
+                  mycode = 'self.' +objectName + '.setToolTip(tooltip)'
+                  exec mycode                     
         # labels
         self.label.setGeometry(QtCore.QRect(xLabel, sepInput*n, labelWidth, 15))
         self.label.setObjectName("label_n")
@@ -794,7 +828,9 @@ class MainWindow(QtGui.QMainWindow, Ui_MainWindow):
          
         with open (path, 'w') as configfile:
             parser.write(configfile)
-            
+
+####################################### AUTOMATIC CREATION OF INPUTS ENDS ########################################           
+##################################################################################################################
 
     def STOP(self):
         global proc
@@ -825,9 +861,28 @@ class MainWindow(QtGui.QMainWindow, Ui_MainWindow):
         self.showDialog()
 
         
+           
+##################################################################################################################
+############################################## COMMAND LINE CODE STARTS ##########################################
 
-# These functions control the command line part of the graphing tab
-#**************************************************************************************************#   
+
+# This part pf the code was taken from a file with an application called PyXPad authored
+# by Ben Dudson, Department of Physics, University of York, benjamin.dudson@york.ac.uk 
+#
+# PyXPad is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# PyXPad is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with Foobar.  If not, see <http://www.gnu.org/licenses/>.
+
+
     def write(self, text):
         """
         Write some log text to output text widget
@@ -1020,22 +1075,18 @@ class MainWindow(QtGui.QMainWindow, Ui_MainWindow):
         # Local scope is set to self.data to allow access to user data
         self.runSandboxed(self._runExec, args=(cmd, glob, self.data))
         self.updateDataTable()
-
-#***************************************************************************************************#     
-# end of command line functions - from pyxpad...
-
-
-
+        
+############################################## COMMAND LINE CODE ENDS ############################################
+##################################################################################################################
 
     def collectit(self):
       """
-    Triggered by clicking on the collect button. Checks to see is anything has been loaded, and if not shows a dialog, if so then runs the collect function
+      Triggered by clicking on the collect button. Checks to see is anything has been loaded, and if not shows a dialog, if so then runs the collect function
       """
       if loadpath1 == 'empty':
         generalDialog.label.setText(QtGui.QApplication.translate("Dialog", "Please load file to collect from" , None, QtGui.QApplication.UnicodeUTF8))
         generalDialog.show()
       else:
-            global loadpath1
             newpath = re.sub('/BOUT.inp', '', loadpath1)
             self.collect(newpath)
 
@@ -1097,15 +1148,14 @@ class MainWindow(QtGui.QMainWindow, Ui_MainWindow):
         if a file is double clicked
         """
         self.sortdir()      #sorts the directory into onscreen order before loading
+        try:
+            window.delete()
+        except RuntimeError:
+            pass
+                      
         global loadpath1, loadpath2
         loadpath = str(archive) + str(directory[x])
-        addTiming(loadpath)
-        
-        ######################################################################
-        #ADD ANY CHANGES TO HEADINGS THAT NEED TO BE MADE HERE IF THEY COME UP
-        ######################################################################
-        changeHeading(loadpath, '[2fluid]', '[TWOfluid]')
-        ######################################################################
+        changeHeadings(loadpath)
 
         # generally loading will proceed to load from the parser and update the controls
         if 'loadpath2' not in globals():
@@ -1221,11 +1271,13 @@ class MainWindow(QtGui.QMainWindow, Ui_MainWindow):
                         # checks to see if the folder has a usernotes or record file and if not copies them from the main config folder
                         checknotes = path + '/usernotes.ini'
                         checkhistory = path + '/record.ini'
-                        if not os.path.isfile(checknotes):
-                            shutil.copy(currentDir+'/config/usernotes.ini', checknotes)
-                        if not os.path.isfile(checkhistory):
-                            shutil.copy(currentDir+'/config/record.ini', checkhistory)
-                            
+                        try:
+                            if not os.path.isfile(checknotes):
+                                shutil.copy(currentDir+'/config/usernotes.ini', checknotes)
+                            if not os.path.isfile(checkhistory):
+                                shutil.copy(currentDir+'/config/record.ini', checkhistory)
+                        except IOError:
+                            pass
                         if os.path.isdir(allpaths):
                           for files in os.listdir(allpaths):
                             allfilepaths = allpaths + '/' + files
@@ -1310,6 +1362,9 @@ class MainWindow(QtGui.QMainWindow, Ui_MainWindow):
         txt.show()
         self.tabWidget.setCurrentIndex(1)
 
+##################################################################################################################
+############################################## GRAPHING TAB CODE STARTS ##########################################
+        
     def rungraph(self):
         """
         Starts the worker2 thread which creates graph, prevents the gui from freezing up when the graph is created
@@ -1419,7 +1474,10 @@ class MainWindow(QtGui.QMainWindow, Ui_MainWindow):
 
     def saveDefault(self):
           defaultSave.show()
-
+          
+############################################## GRAPHING TAB CODE ENDS ############################################
+##################################################################################################################
+          
     def runScan(self):
           scan.show()
           scan.sectionCombo.clear()
@@ -1516,9 +1574,7 @@ class dialogsave(QtGui.QMainWindow, Ui_Dialog):
                 # These calls set up the window
                 super(dialogsave, self).__init__(parent)
                 self.setupUi(self)
-                
-
-                
+                             
                 # couldn't input the function directly into line edit
                 
                 self.buttonBox.accepted.connect(self.save)
@@ -1657,6 +1713,7 @@ class dialogsave(QtGui.QMainWindow, Ui_Dialog):
 
 
         def printit(self, value):
+                # sends the signalled text from the worker to the output stream
                 if value == '' and proc.poll() is not None:
                         v = 1
                 else:
@@ -1694,13 +1751,16 @@ class textdisplayhistory(QtGui.QMainWindow, Ui_TextWindowHistory):
         """
         global loadpath1
         try:
-            loadpath1 = self.lineEdit.displayText()
-            parser.read(str(loadpath1))
+            loadpath1 = self.lineEdit.displayText()+ '/BOUT.inp'
+            changeHeadings(loadpath1)
+            window.delete()
+            window.tabWidget.setCurrentIndex(0)
             window.updateControls(loadpath1)
             window.tabWidget.setCurrentIndex(1)
             self.close()
-        # if user doesn't copy the path exactly throws out a TypeError, asked to check their input and try again
-        except TypeError:
+            
+        # if user doesn't copy the path exactly throws out an IOError, asked to check their input and try again
+        except IOError:
             generalDialog.show()
             generalDialog.label.setText(QtGui.QApplication.translate("Dialog", "Try removing whitespace and additional \n characters from path" , None, QtGui.QApplication.UnicodeUTF8))
 
@@ -1791,13 +1851,18 @@ class Scandialog(QtGui.QMainWindow, Ui_ScanDialog):
         subkey2 = self.indexCombo_2.itemText(self.indexCombo_2.currentIndex())
         initial2 = self.initialLine2.text()
         limit2 = self.finalLine2.text()
+        if limit2 == '':
+            limit2 = 'NONE'
         increment2 = self.incrementLine2.text()
+        if increment2 == '':
+            increment2 = 'NONE'
+
         
         # change whether the inputed increment is added to the initial or is percentage change
         if self.comboBox_2.currentText() == 'Raw':
             incrementType = '+'
         else:
-            incrementType = ''
+            incrementType = 'other'
 
         # change the type of scan dependent on the user input
         if self.comboBox.currentIndex() == 0:
@@ -1865,7 +1930,7 @@ class helpView(QtGui.QMainWindow, Ui_helpViewer):
 
 class resize(QtGui.QMainWindow, Ui_Resize):
     """
-    Creates a a small window which contains lots of variable to change the appearence of the control boxes as created automtically
+    Creates a a small window which contains lots of variables to change the appearence of the control boxes as created automtically
     so that the user can make sure they are best organised. 
     """
     def __init__(self, parent=None):
@@ -1907,6 +1972,9 @@ class resize(QtGui.QMainWindow, Ui_Resize):
         self.apply.clicked.connect(self.updateConfig)
 
     def updateConfig(self):
+        """
+        Writes all changes that have been made in the dialog box to the config file
+        """
         global config
         with open (config, 'w') as configfile:
             position.write(configfile)
@@ -1914,6 +1982,9 @@ class resize(QtGui.QMainWindow, Ui_Resize):
 
 
     def updateValues(self):
+        """
+        Updates the positions of the boxes and inputs in the inputs tab taknig into account the changes to the control file that have been made. 
+        """
         global leftBorder, verticalSeperation, topBorder, maxLength, boxWidth, horizontalSeperation, xLabel, xInput, labelWidth, sepInput, loadpath1
         with open(config) as fp:
             position = configparser.ConfigParser()
@@ -1929,14 +2000,19 @@ class resize(QtGui.QMainWindow, Ui_Resize):
         xInput = int(position.get('appearance', 'xinput'))
         labelWidth = int(position.get('appearance', 'labelwidth'))
         sepInput = int(position.get('appearance', 'sepinput'))
+
+        # the only way to get changes made here to appear on screen is to 'change tabs'.
+        # this tab changing isn't visible but it seems to clear the memory
         window.tabWidget.setCurrentIndex(0)
 
         if loadpath1 == 'empty':
+             window.delete()
              window.updateControls(loadpath)
         else:
+             window.delete()
              loadpath1 = re.sub('/BOUT.inp', '', loadpath1)
              window.updateControls(loadpath1 + '/BOUT.inp')
-
+        # return to original tab
         window.tabWidget.setCurrentIndex(1)
         
 
