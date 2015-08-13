@@ -11,7 +11,7 @@
    </rect>
   </property>
   <property name="windowTitle">
-   <string>Dialog</string>
+   <string>Scanning Simulation Settings</string>
   </property>
   <widget class="QPushButton" name="pushButton">
    <property name="geometry">
@@ -37,22 +37,6 @@
    </property>
    <property name="text">
     <string>Cancel</string>
-   </property>
-  </widget>
-  <widget class="QCheckBox" name="checkBox">
-   <property name="geometry">
-    <rect>
-     <x>110</x>
-     <y>363</y>
-     <width>84</width>
-     <height>20</height>
-    </rect>
-   </property>
-   <property name="toolTip">
-    <string>If this is checked then each subsequent run will use the restart files from the previous run</string>
-   </property>
-   <property name="text">
-    <string>Restart </string>
    </property>
   </widget>
   <widget class="QGroupBox" name="groupBox">

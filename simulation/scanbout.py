@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'scanbout.ui'
 #
-# Created: Tue Aug 11 12:13:39 2015
+# Created: Thu Aug 13 12:44:31 2015
 #      by: pyside-uic 0.2.15 running on PySide 1.2.1
 #
 # WARNING! All changes made in this file will be lost!
@@ -19,9 +19,6 @@ class Ui_ScanDialog(object):
         self.pushButton_2 = QtGui.QPushButton(ScanDialog)
         self.pushButton_2.setGeometry(QtCore.QRect(280, 363, 75, 25))
         self.pushButton_2.setObjectName("pushButton_2")
-        self.checkBox = QtGui.QCheckBox(ScanDialog)
-        self.checkBox.setGeometry(QtCore.QRect(110, 363, 84, 20))
-        self.checkBox.setObjectName("checkBox")
         self.groupBox = QtGui.QGroupBox(ScanDialog)
         self.groupBox.setGeometry(QtCore.QRect(30, 10, 331, 121))
         self.groupBox.setObjectName("groupBox")
@@ -112,11 +109,9 @@ class Ui_ScanDialog(object):
         QtCore.QMetaObject.connectSlotsByName(ScanDialog)
 
     def retranslateUi(self, ScanDialog):
-        ScanDialog.setWindowTitle(QtGui.QApplication.translate("ScanDialog", "Dialog", None, QtGui.QApplication.UnicodeUTF8))
+        ScanDialog.setWindowTitle(QtGui.QApplication.translate("ScanDialog", "Scanning Simulation Settings", None, QtGui.QApplication.UnicodeUTF8))
         self.pushButton.setText(QtGui.QApplication.translate("ScanDialog", "Scan", None, QtGui.QApplication.UnicodeUTF8))
         self.pushButton_2.setText(QtGui.QApplication.translate("ScanDialog", "Cancel", None, QtGui.QApplication.UnicodeUTF8))
-        self.checkBox.setToolTip(QtGui.QApplication.translate("ScanDialog", "If this is checked then each subsequent run will use the restart files from the previous run", None, QtGui.QApplication.UnicodeUTF8))
-        self.checkBox.setText(QtGui.QApplication.translate("ScanDialog", "Restart ", None, QtGui.QApplication.UnicodeUTF8))
         self.groupBox.setTitle(QtGui.QApplication.translate("ScanDialog", "First Variable to Scan", None, QtGui.QApplication.UnicodeUTF8))
         self.label_3.setText(QtGui.QApplication.translate("ScanDialog", "Initial Value", None, QtGui.QApplication.UnicodeUTF8))
         self.label_5.setText(QtGui.QApplication.translate("ScanDialog", "Increment", None, QtGui.QApplication.UnicodeUTF8))

@@ -99,13 +99,15 @@ class Worker(QThread):
 ##        """
 
       dataLine1 = Signal(str)
-      def __init__(self, path, restart, outputStream, parent = None):
+      def __init__(self, path, restart, numProc, nice, outputStream,  parent = None):
               QThread.__init__(self, parent)
               self.path = path + '/'
               self.loadpath = path
               self.restart = restart
               self.outputStream = outputStream
+              self.numProc = numProc
               self.exiting = False
+              self.nice = nice
               window.tabWidget.setTabEnabled(2, True)
               # reattaches comments that would have been lost because of the config parser, tups is the list of tuples that they are saved within
               global tups
@@ -116,7 +118,7 @@ class Worker(QThread):
       def run(self):
           # proc runs the simulation
           global proc
-          proc = subprocess.Popen([currentDir + '/runboutSim.py', str(self.path), str(self.restart)],
+          proc = subprocess.Popen([currentDir + '/runboutSim.py', str(self.path), str(self.restart), str(self.numProc), str(self.nice)],
                                   shell = False, stdout = subprocess.PIPE, stderr = subprocess.PIPE, preexec_fn=os.setsid)
             
           running = True
@@ -144,7 +146,7 @@ class scanWorker(QThread):
 ##                """
 
       dataLine1 = Signal(str)
-      def __init__(self, path, key, subkey, initial, limit, increment, restart, incrementType, scanType, key2, subkey2, initial2, limit2, increment2, outputStream, parent = None):
+      def __init__(self, path, key, subkey, initial, limit, increment, restart, incrementType, scanType, key2, subkey2, initial2, limit2, increment2, numProc, nice, outputStream, parent = None):
               QThread.__init__(self, parent)
               self.path = path
               self.key = key
@@ -162,14 +164,18 @@ class scanWorker(QThread):
               self.scanType = scanType
               self.outputStream = outputStream
               self.exiting = False
+              self.numProc = numProc
+              self.nice = nice
               window.tabWidget.setTabEnabled(2, True)
-              print path, key, subkey, initial, limit, increment, restart, incrementType, scanType, key2, subkey2, initial2, limit2, increment2
+
 
       def run(self):
           # proc runs the simulation
           global proc
-          proc = subprocess.Popen([currentDir + '/scanboutSim.py', str(self.path), str(self.key), str(self.subkey), str(self.initial), str(self.limit), str(self.increment), str(self.restart), str(self.incrementType), str(self.scanType), str(self.initial2), str(self.limit2), str(self.key2),str(self.subkey2),str(self.increment2)],
+          proc = subprocess.Popen([currentDir + '/scanboutSim.py', str(self.path), str(self.key), str(self.subkey), str(self.initial), str(self.limit), str(self.increment), str(self.restart), str(self.incrementType), str(self.scanType), str(self.numProc), str(self.nice), str(self.initial2), str(self.limit2), str(self.key2),str(self.subkey2),str(self.increment2)],
                                    shell = False, stdout = subprocess.PIPE, stderr = subprocess.PIPE)
+          global pid
+          pid = proc.pid
           running = True
           while running == True:
               output = proc.stdout.readline()
@@ -345,7 +351,7 @@ class MainWindow(QtGui.QMainWindow, Ui_MainWindow):
         # These calls set up the window
         super(MainWindow, self).__init__(parent)
         self.setupUi(self)
-        
+
         """
         initialise all the console and graphing bits as used in some of Ben's bits.
         """
@@ -454,6 +460,30 @@ class MainWindow(QtGui.QMainWindow, Ui_MainWindow):
         ###################################################
         # create an example folder in the archive folder
         self.actionCreate_Example.triggered.connect(self.createInitial)
+        
+        ###################################################
+        # if restart is checked locks in number of processor to use
+        self.checkBox.stateChanged.connect(self.disableProc)
+
+        ###################################################
+        # set niceness default
+        self.niceSpin.setValue(10)
+
+    def disableProc(self):
+        """
+        Don't want to be able to chose a different number of processors if restarting than was already used as this causes a crash
+        so disables the combobox and resets to original value
+        """
+        if self.checkBox.isChecked() == True:
+            global procNumber
+            # disables combo and sets to original value
+            try:
+                self.procSpin.setValue(procNumber)
+            except NameError:
+                pass
+            self.procSpin.setEnabled(False)
+        else:
+            self.procSpin.setEnabled(True)
 
         # the if not statement looks to see if the current archive is a folder and prompts the user to select one if not on initialisation
             
@@ -834,7 +864,11 @@ class MainWindow(QtGui.QMainWindow, Ui_MainWindow):
 
     def STOP(self):
         global proc
-        os.killpg(proc.pid, signal.SIGINT)
+        try:
+            os.killpg(proc.pid, signal.SIGINT)
+        except OSError:
+            proc.terminate()
+      
       
     def changerun(self):
         """
@@ -865,8 +899,7 @@ class MainWindow(QtGui.QMainWindow, Ui_MainWindow):
 ##################################################################################################################
 ############################################## COMMAND LINE CODE STARTS ##########################################
 
-
-# This part pf the code was taken from a file with an application called PyXPad authored
+# This part of the code was taken from a file with an application called PyXPad authored
 # by Ben Dudson, Department of Physics, University of York, benjamin.dudson@york.ac.uk 
 #
 # PyXPad is free software: you can redistribute it and/or modify
@@ -881,7 +914,6 @@ class MainWindow(QtGui.QMainWindow, Ui_MainWindow):
 #
 # You should have received a copy of the GNU General Public License
 # along with Foobar.  If not, see <http://www.gnu.org/licenses/>.
-
 
     def write(self, text):
         """
@@ -1154,12 +1186,19 @@ class MainWindow(QtGui.QMainWindow, Ui_MainWindow):
             pass
                       
         global loadpath1, loadpath2
+        try:
+            global procNumber
+            procNumber = int(self.tableWidget.item(x,3).text())
+        except ValueError:
+            procNumber = 5
+        
         loadpath = str(archive) + str(directory[x])
         changeHeadings(loadpath)
 
         # generally loading will proceed to load from the parser and update the controls
         if 'loadpath2' not in globals():
             loadpath1 = loadpath
+            self.procSpin.setValue(procNumber)
             parser.read(str(loadpath))
             self.updateControls(loadpath)
             self.tabWidget.setTabEnabled(1, True)
@@ -1252,6 +1291,7 @@ class MainWindow(QtGui.QMainWindow, Ui_MainWindow):
         """
 
         #loads all the files from the archive
+        oldpath = ''
         window.tableWidget.clearContents()
         window.tableWidget.setRowCount(0)
         if os.path.isdir(archive):
@@ -1260,10 +1300,22 @@ class MainWindow(QtGui.QMainWindow, Ui_MainWindow):
               #directory is a global variable used in many functions
               global directory
               directory = []
+              subdirectory = []
+              
               #look in each folder
               for folder in lst:
                   path = os.path.join(archive, str(folder))
                   # if finds files of correct type finds there attributes
+                  if os.path.isdir(path):
+                      sublst = os.listdir(path)
+                      for file in sublst:
+                          filepath = os.path.join(path, file)
+                          if os.path.isfile(filepath) and filepath.endswith('.nc'):
+                              subdirectory.append(filepath)
+                  procNumber = len(subdirectory)/2
+                  if procNumber == 0:
+                      procNumber = 'No restart files'
+                  
                   if os.path.isdir(path):
                     for file in os.listdir(path):
                         allpaths = path + '/' + file
@@ -1278,6 +1330,7 @@ class MainWindow(QtGui.QMainWindow, Ui_MainWindow):
                                 shutil.copy(currentDir+'/config/record.ini', checkhistory)
                         except IOError:
                             pass
+                          
                         if os.path.isdir(allpaths):
                           for files in os.listdir(allpaths):
                             allfilepaths = allpaths + '/' + files
@@ -1294,9 +1347,8 @@ class MainWindow(QtGui.QMainWindow, Ui_MainWindow):
                                     f= open(notespath, 'r')
                                     filedata = f.read()
                                     f.close
-                                    directory.append(('/' + folder + '/' + file + '/' + files,a,b, filedata))
-                                    # lists the found files attributes from directory in table in the GUI
-                                
+                                    directory.append(('/' + folder + '/' + file + '/' + files,a,b, filedata, procNumber))
+                                    # lists the found files attributes from directory in table in the GUI                               
                                     
                         if file.endswith(filetype):
                             Time1 = os.path.getctime(path)
@@ -1307,16 +1359,23 @@ class MainWindow(QtGui.QMainWindow, Ui_MainWindow):
                             b = datetime.fromtimestamp(Time2).strftime("%d %b %Y  %H:%M:%S")
                             # adds comments to the directory
                             notespath =  path + '/usernotes.ini'
+
+                                
                             if os.path.isfile(notespath):
                                 f= open(notespath, 'r')
                                 filedata = f.read()
                                 f.close
-                                directory.append(('/'+str(folder)+'/'+str(file),a,b, filedata))
+                                directory.append(('/'+str(folder)+'/'+str(file),a,b, filedata, procNumber))
+                                                        
+
+                  
+                  subdirectory = []
+                                
                                 # lists the found files attributes from directory in table in the GUI 
               for i in range(len(directory)):
                   filenumber = str(i+1)
                   pathname = str(directory[i][0])
-                  self.insertTableRow(pathname, directory[i][1], directory[i][2], directory[i][3])
+                  self.insertTableRow(pathname, directory[i][1], directory[i][2], directory[i][4], directory[i][3])
 
     def sortdir(self):
         """
@@ -1685,8 +1744,10 @@ class dialogsave(QtGui.QMainWindow, Ui_Dialog):
                     
                     window.outputStream.clear()
                     restart = window.checkBox.isChecked()
+                    numProc = window.procSpin.value()
+                    nice = window.niceSpin.value()
                     if restart == False:
-                        self.runit(runfolder, 'n')
+                        self.runit(runfolder, 'n', numProc, nice)
                     else:
                         inputfiles = os.listdir(runfolder)
                         for restartfile in inputfiles:
@@ -1697,14 +1758,13 @@ class dialogsave(QtGui.QMainWindow, Ui_Dialog):
                                 generalDialog.show()
                                 generalDialog.label.setText(QtGui.QApplication.translate("Dialog", "No restart files in folder!" , None, QtGui.QApplication.UnicodeUTF8))
                         if restart == 'y':
-                                self.runit(runfolder, 'y')
+                                self.runit(runfolder, 'y', numProc, nice)
 
                     run = 'false'
 
 
-        def runit(self, path, restart):
-
-                self.worker = Worker(path, restart, window.outputStream)
+        def runit(self, path, restart, numProc, nice):
+                self.worker = Worker(path, restart, numProc, nice, window.outputStream)
                 window.tabWidget.setCurrentIndex(2)
                 if not self.worker.isRunning():
                         self.worker.exiting= False
@@ -1857,7 +1917,6 @@ class Scandialog(QtGui.QMainWindow, Ui_ScanDialog):
         if increment2 == '':
             increment2 = 'NONE'
 
-        
         # change whether the inputed increment is added to the initial or is percentage change
         if self.comboBox_2.currentText() == 'Raw':
             incrementType = '+'
@@ -1871,21 +1930,24 @@ class Scandialog(QtGui.QMainWindow, Ui_ScanDialog):
             scanType = 'full'
             
         # test whether to restart
-        if self.checkBox.isChecked() == True:
+        if window.checkBox.isChecked() == True:
           restart = 'y'
         else:
           restart = 'n'
-          
-        self.runitscan(path, key, subkey, initial, limit, increment, restart, key2, subkey2, initial2, limit2, increment2, incrementType, scanType)
+
+        numProc = window.procSpin.value()
+        nice = window.niceSpin.value()
+        
+        self.runitscan(path, key, subkey, initial, limit, increment, restart, key2, subkey2, initial2, limit2, increment2, incrementType, scanType, numProc, nice)
         self.close()
 
-    def runitscan(self, path, key, subkey, initial, limit, increment, restart, key2, subkey2, initial2, limit2, increment2, incrementType, scanType):
+    def runitscan(self, path, key, subkey, initial, limit, increment, restart, key2, subkey2, initial2, limit2, increment2, incrementType, scanType, numProc, nice):
         """
         this function start the worker thread using the scanWorker class. All the variables are passed as arguments to scanbout.py. If scanbout doesn't recieve
         enough arguments then BOUT will fail to run. This means that if the  user doesn;t input all the increment info extra an error will occur an by seen in the
         output stream
         """
-        self.worker = scanWorker(path, key, subkey, initial, limit, increment, restart, incrementType, scanType, key2, subkey2, initial2, limit2, increment2, window.outputStream)
+        self.worker = scanWorker(path, key, subkey, initial, limit, increment, restart, incrementType, scanType, key2, subkey2, initial2, limit2, increment2, numProc, nice, window.outputStream)
         window.tabWidget.setCurrentIndex(2)
         if not self.worker.isRunning():
                 self.worker.exiting= False
@@ -1920,11 +1982,18 @@ class helpView(QtGui.QMainWindow, Ui_helpViewer):
         self.setupUi(self)
 
     def openHelp(self):
+          """
+          opens the help file which is stored as an HTML for loading within a text editior
+          """
           with open('helpHTML.htm', 'r') as helpfile:
               
               self.textBrowser.insertHtml(helpfile.read())
               helpfile.close()
               self.show()
+          # opens the file so that the top of the file is showing 
+          self.textBrowser.moveCursor(QTextCursor.Start)
+          # stops user editing
+          self.textBrowser.setReadOnly(True)
 
 ####################################### NEW CLASS #######################################
 

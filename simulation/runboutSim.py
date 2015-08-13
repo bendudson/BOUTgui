@@ -17,11 +17,12 @@ MPIRUN = getmpirun()
 nargs = len(sys.argv)
 runid = sys.argv[1] # First argument is the Archive ID to load
 restart = sys.argv[2]
-
+proc = sys.argv[3]
+nicelvl =sys.argv[4]
     
 
 
-if nargs < 3:
+if nargs < 5:
     # prints help if arguements aren't given
     print("Format is: ")
     print("  %s <run id> [directory]")
@@ -29,7 +30,7 @@ if nargs < 3:
     sys.exit(1)
 
 # Unless an arguement is given a temporary folder is created to run in
-if nargs > 3:
+if nargs > 5:
     directory = sys.argv[3]
 else:
     directory = 'tmp'
@@ -67,9 +68,9 @@ returnHeadings(directory + '/BOUT.inp')
 cmd = exe + ' -d ' + directory + '/'
 #print("Command = '%s'" % cmd)
 if restart == 'y':
-    launch(cmd + ' restart', nproc = 5, nice = 10)
+    launch(cmd + ' restart', nproc = proc, nice = nicelvl)
 else:
-    launch(cmd, nproc = 5, nice = 10, pipe=False)
+    launch(cmd, nproc = proc, nice = nicelvl, pipe=False)
 
 
 # Save files from tmp into the loaded archive file and allows for addition of notes

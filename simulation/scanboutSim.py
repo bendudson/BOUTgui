@@ -52,28 +52,30 @@ incrementType = sys.argv[8]
 
 scanType = sys.argv[9]
 
+proc = sys.argv[10]
 
+nicelvl = sys.argv[11]
 # should a second set of scanning variable be given then this is called, these are ignored if not
 
-if str(sys.argv[14]) != 'NONE':
-  initial2 = sys.argv[10]
+if str(sys.argv[16]) != 'NONE':
+  initial2 = sys.argv[12]
   initial2 = float(initial2)
 
-  limit2 = sys.argv[11]
+  limit2 = sys.argv[13]
   limit2 = float(limit2)
 
-  key2 = '[' + sys.argv[12] + ']'
+  key2 = '[' + sys.argv[14] + ']'
   if key2 == '[timing]':
     key2 = ''
     
 
-  subkey2 = sys.argv[13]
+  subkey2 = sys.argv[15]
 
-  increment2 = sys.argv[14]
+  increment2 = sys.argv[16]
   increment2 = float(increment2)
 
 
-if nargs < 10:
+if nargs < 12:
     # prints help if arguments aren't given
     print("Format is: ")
     print("  %s <run id> [directory]")
@@ -81,7 +83,7 @@ if nargs < 10:
     sys.exit(1)
 
 # Unless an arguement is given a temporary folder is created to run in
-if nargs > 10:
+if nargs > 12:
     directory = sys.argv[2]
 else:
     directory = 'tmp'
@@ -162,9 +164,9 @@ def scanPOWER(initial, limit, restart, loadpath, key, subkey, increment):
     move(temp, loadpath)
     # runs the simulation, adds restart command if necessary
     if restart == 'y':
-        launch(cmd + ' restart', nproc = 5, nice = 10)
+        launch(cmd + ' restart', nproc = proc, nice = nicelvl)
     else:
-        launch(cmd, nproc = 5, nice = 10, pipe=False)
+        launch(cmd, nproc = proc, nice = nicelvl, pipe=False)
     return initial
 
 
@@ -318,7 +320,7 @@ def createfolder(subkey, initial):
     loadfrom = newfolder  
 
 try:
-  if sys.argv[14]!= 'NONE':
+  if sys.argv[16]!= 'NONE':
     run2(initial, limit, restart, loadpath, key, subkey, increment, initial2, limit2, key2, subkey2, increment2, scanType)
   else:
     run1(initial, limit, restart, loadpath, key, subkey, increment)

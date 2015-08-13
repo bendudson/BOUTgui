@@ -10,8 +10,14 @@
     <height>828</height>
    </rect>
   </property>
+  <property name="cursor">
+   <cursorShape>ArrowCursor</cursorShape>
+  </property>
   <property name="windowTitle">
-   <string>Program Name</string>
+   <string>boutGUI</string>
+  </property>
+  <property name="tabShape">
+   <enum>QTabWidget::Rounded</enum>
   </property>
   <widget class="QWidget" name="centralwidget">
    <layout class="QGridLayout" name="gridLayout_2">
@@ -20,8 +26,14 @@
       <property name="toolTip">
        <string/>
       </property>
+      <property name="tabShape">
+       <enum>QTabWidget::Rounded</enum>
+      </property>
       <property name="currentIndex">
        <number>0</number>
+      </property>
+      <property name="tabsClosable">
+       <bool>false</bool>
       </property>
       <property name="movable">
        <bool>false</bool>
@@ -36,8 +48,8 @@
        <widget class="QPushButton" name="pushButton">
         <property name="geometry">
          <rect>
-          <x>1330</x>
-          <y>710</y>
+          <x>1320</x>
+          <y>716</y>
           <width>81</width>
           <height>25</height>
          </rect>
@@ -52,10 +64,10 @@
        <widget class="QTableWidget" name="tableWidget">
         <property name="geometry">
          <rect>
-          <x>10</x>
+          <x>20</x>
           <y>20</y>
-          <width>1411</width>
-          <height>681</height>
+          <width>1381</width>
+          <height>691</height>
          </rect>
         </property>
         <property name="alternatingRowColors">
@@ -68,8 +80,11 @@
          <enum>QAbstractItemView::SelectRows</enum>
         </property>
         <property name="columnCount">
-         <number>4</number>
+         <number>5</number>
         </property>
+        <attribute name="horizontalHeaderDefaultSectionSize">
+         <number>150</number>
+        </attribute>
         <attribute name="horizontalHeaderShowSortIndicator" stdset="0">
          <bool>false</bool>
         </attribute>
@@ -105,6 +120,11 @@
         </column>
         <column>
          <property name="text">
+          <string>No of Processors</string>
+         </property>
+        </column>
+        <column>
+         <property name="text">
           <string>Comments</string>
          </property>
         </column>
@@ -117,6 +137,9 @@
           <width>951</width>
           <height>20</height>
          </rect>
+        </property>
+        <property name="toolTip">
+         <string>Shows the file path of the current archive</string>
         </property>
         <property name="text">
          <string>None loaded or bad file path, click File -&gt; Archive Location to load</string>
@@ -143,11 +166,14 @@
        <widget class="QPushButton" name="pushButton_2">
         <property name="geometry">
          <rect>
-          <x>920</x>
+          <x>1170</x>
           <y>687</y>
           <width>75</width>
           <height>25</height>
          </rect>
+        </property>
+        <property name="toolTip">
+         <string>Save changes made to the control file without running anything</string>
         </property>
         <property name="text">
          <string>Write to file</string>
@@ -162,6 +188,9 @@
           <height>25</height>
          </rect>
         </property>
+        <property name="toolTip">
+         <string>Run the simulation with all the user settings </string>
+        </property>
         <property name="text">
          <string>Run Simulation</string>
         </property>
@@ -169,11 +198,14 @@
        <widget class="QCheckBox" name="checkBox">
         <property name="geometry">
          <rect>
-          <x>1174</x>
-          <y>691</y>
+          <x>1171</x>
+          <y>720</y>
           <width>71</width>
           <height>20</height>
          </rect>
+        </property>
+        <property name="toolTip">
+         <string>If checked runs the simulations from the previous data</string>
         </property>
         <property name="text">
          <string>Restart</string>
@@ -187,6 +219,9 @@
           <width>771</width>
           <height>16</height>
          </rect>
+        </property>
+        <property name="toolTip">
+         <string>Current config filepath</string>
         </property>
         <property name="text">
          <string>None</string>
@@ -225,6 +260,9 @@
            <width>491</width>
            <height>131</height>
           </rect>
+         </property>
+         <property name="toolTip">
+          <string>Type comments in here that will be saved in the archive</string>
          </property>
         </widget>
        </widget>
@@ -266,8 +304,72 @@
           <height>16</height>
          </rect>
         </property>
+        <property name="toolTip">
+         <string>File path of the simulation code that will be used in the simulation</string>
+        </property>
         <property name="text">
          <string>None</string>
+        </property>
+       </widget>
+       <widget class="QSpinBox" name="procSpin">
+        <property name="geometry">
+         <rect>
+          <x>1060</x>
+          <y>688</y>
+          <width>53</width>
+          <height>22</height>
+         </rect>
+        </property>
+        <property name="toolTip">
+         <string>Change the number of processor to run the simulation on</string>
+        </property>
+       </widget>
+       <widget class="QLabel" name="label">
+        <property name="geometry">
+         <rect>
+          <x>919</x>
+          <y>690</y>
+          <width>151</width>
+          <height>16</height>
+         </rect>
+        </property>
+        <property name="toolTip">
+         <string>Change the number of processor to run the simulation on</string>
+        </property>
+        <property name="text">
+         <string>Number of Processors:</string>
+        </property>
+       </widget>
+       <widget class="QSpinBox" name="niceSpin">
+        <property name="geometry">
+         <rect>
+          <x>1060</x>
+          <y>718</y>
+          <width>53</width>
+          <height>22</height>
+         </rect>
+        </property>
+        <property name="toolTip">
+         <string>Set the niceness level of the simulation</string>
+        </property>
+        <property name="minimum">
+         <number>-99</number>
+        </property>
+       </widget>
+       <widget class="QLabel" name="label_2">
+        <property name="geometry">
+         <rect>
+          <x>959</x>
+          <y>720</y>
+          <width>101</width>
+          <height>16</height>
+         </rect>
+        </property>
+        <property name="toolTip">
+         <string>Set the niceness level of the simulation</string>
+        </property>
+        <property name="text">
+         <string>'Niceness' level:</string>
         </property>
        </widget>
       </widget>
@@ -284,6 +386,9 @@
           <height>691</height>
          </rect>
         </property>
+        <property name="toolTip">
+         <string>The output stream, showing simualtion data from the BOUT code</string>
+        </property>
        </widget>
        <widget class="QPushButton" name="stopSimulation">
         <property name="geometry">
@@ -293,6 +398,9 @@
           <width>1401</width>
           <height>25</height>
          </rect>
+        </property>
+        <property name="toolTip">
+         <string>Stop the simulation</string>
         </property>
         <property name="text">
          <string>Stop Simulation</string>
@@ -620,6 +728,9 @@
           <height>16</height>
          </rect>
         </property>
+        <property name="toolTip">
+         <string>The folder path showing the location of the data files</string>
+        </property>
         <property name="text">
          <string>None</string>
         </property>
@@ -826,6 +937,9 @@
           <width>701</width>
           <height>621</height>
          </rect>
+        </property>
+        <property name="toolTip">
+         <string>Graphing area, any plots appear here</string>
         </property>
         <property name="frameShape">
          <enum>QFrame::StyledPanel</enum>
