@@ -3,14 +3,16 @@ BOUT++ is a 3D plasma fluid simulation code which has been developed at York in 
 
 The GUI was developed alongside a command line application with the aim to streamline this process, making everything more connected and the code a lot easier to use. It combines data analysis and data creation all within one application. It is has also been designed with data archiving in mind. Information about each run stored to aid the user when coming back to old runs and remember what changes were made and what the history of each data file is. This should make long term research easier, particularly if old data is requested for some reason. 
 
-Quick guide:
+Quick Installation Guide:
 
-1) Download the tar archive from GitHub at https://github.com/joe1510/boutGUI .
+1) Download the tar archive from GitHub
 
 2) Un-tar into the chosen folder, e.g. tar xvzf BOUTgui.tar.gz /hwdisks/home/username/BOUTgui
 
-3) Can ignore all files except BOUTgui.py which isthe main application file when running
+3) Can ignore all files except BOUTgui.py which is the main application file when running
 
-4) Run the GUI by using ./BOUTgui.py when in the BOUTgui folder
+4) Run the GUI by using ./BOUTgui.py once changed into the BOUTgui folder
+
+For help open the Installation and Running Guide (pdf) stored within the tar archive.
 
 
