@@ -64,14 +64,29 @@ for runfiles in inputfiles:
     filepath = os.path.join(runid, runfiles)
     if os.path.isfile(filepath):
         shutil.copy(filepath, directory)
-returnHeadings(directory + '/BOUT.inp')     
-cmd = exe + ' -d ' + directory + '/'
+returnHeadings(directory + '/BOUT.inp')    
+
+# Split exe into path and file
+path, exe = os.path.split(exe)
+
+print("Path = '%s', exe = '%s'" % (path, exe))
+
+# Change directory
+old_dir = os.getcwd()
+os.chdir(path)
+
+cmd = "./" + exe + ' -d ' + os.path.join(old_dir, directory) + '/'
+
+print("Current dir = '%s', running '%s'" % (os.getcwd(), cmd))
+
 #print("Command = '%s'" % cmd)
 if restart == 'y':
     launch(cmd + ' restart', nproc = proc, nice = nicelvl)
 else:
     launch(cmd, nproc = proc, nice = nicelvl, pipe=False)
 
+# Change back to old directory
+os.chdir(old_dir)
 
 # Save files from tmp into the loaded archive file and allows for addition of notes
 

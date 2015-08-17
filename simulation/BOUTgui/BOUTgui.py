@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 import configparser, sys, os,  difflib, subprocess, threading, signal
+from boututils.datafile import DataFile
 from datetime import *
 from PySide.QtGui import *
 from PySide.QtCore import *
@@ -16,6 +17,7 @@ from helpView import *
 from resize import *
 from dialogSimulation import *
 from dialogArchive import *
+from defaultVars import *
 
 # pyxpad
 try:
@@ -28,6 +30,7 @@ except:
   from io import StringIO
 import re
 import string
+
 
 # GLOBAL VARIABLES
 # currentDir will always have the config files in it
@@ -56,15 +59,14 @@ with open(config) as fp:
     position = configparser.ConfigParser()
     position.optionxform = str
     position.readfp(fp)
+
 leftBorder = int(position.get('appearance', 'leftborder'))
 verticalSeperation = int(position.get('appearance', 'verticalseperation'))
 topBorder = int(position.get('appearance', 'topborder'))
 maxLength = int(position.get('appearance', 'maxlength'))
 boxWidth = int(position.get('appearance', 'boxwidth'))
 horizontalSeperation = int(position.get('appearance', 'horizontalseperation'))
-xLabel = int(position.get('appearance', 'xlabel'))
-xInput = int(position.get('appearance', 'xinput'))
-labelWidth = int(position.get('appearance', 'labelwidth'))
+boxLength = int(position.get('appearance', 'boxlength'))
 sepInput = int(position.get('appearance', 'sepinput'))
 ########################################################################
 
@@ -118,6 +120,8 @@ class Worker(QThread):
       def run(self):
           # proc runs the simulation
           global proc
+          # TRYING TO WORK OUT WHY YOU CAN'T RUN AFTER COLLECTING!!
+          print currentDir + '/runboutSim.py', str(self.path), str(self.restart), str(self.numProc), str(self.nice)
           proc = subprocess.Popen([currentDir + '/runboutSim.py', str(self.path), str(self.restart), str(self.numProc), str(self.nice)],
                                   shell = False, stdout = subprocess.PIPE, stderr = subprocess.PIPE, preexec_fn=os.setsid)
             
@@ -212,32 +216,24 @@ class Worker2(QThread):
         sets the variables according to what has been user input, the multiple if
         statements are due to the variable needing to be input 
         """
+        # 4D values from user input
         x = (window.xspin.text())
         y = (window.yspin.text())
         z = (window.zspin.text())
         t = (window.tspin.text())
-        if window.variableCombo.currentIndex() == 0:
-            variable = ne
-            self.plotdata(variable, t, x, y, z)
-        if window.variableCombo.currentIndex() == 1:
-            variable = nvi
-            self.plotdata(variable, t, x, y, z)
-        if window.variableCombo.currentIndex() == 2:
-            variable = p
-            self.plotdata(variable, t, x, y, z)
-        if window.variableCombo.currentIndex() == 3:
-            variable = nn
-            self.plotdata(variable, t, x, y, z)
-        if window.variableCombo.currentIndex() == 4:
-            variable = nvn
-            self.plotdata(variable, t, x, y, z)
-        if window.variableCombo.currentIndex() == 5:
-            variable = pn
-            self.plotdata(variable, t, x, y, z)
-        if window.variableCombo.currentIndex() == 6:
-            variable = temp
-            self.plotdata(variable, t, x, y, z)
-            
+
+        # finds index of variable combo
+        i = window.variableCombo.currentIndex()
+
+        # uses plotLst, varDic created in collectworker
+        global plotLst, varDic
+        # variable becomes the data of the selected variable onscreen
+        variable =  plotLst[i]
+        variable = varDic[variable]
+
+        # call plotdata
+        self.plotdata(variable, t, x, y, z)
+        
     def plotdata(self, variable, t, x, y, z):
         """
         Takes into account all of the possiblilties when it comes to spanning all variables
@@ -288,42 +284,117 @@ class WorkerCollect(QThread):
         QThread.__init__(self, parent)
         self.path = path
         
+    def insertTableRow(self, *args):
+        """
+        Inserts a row into the table at row 0
+        The inputs to this function will be inserted in order as
+        columns in this new row. Need one of these functions for each table. 
+        """
+        # First disable sorting, so table won't rearrange itself
+        addDefaultVar.otherVariablesTable.setSortingEnabled(False)
+        
+        # Insert a row at 0, i.e. the top
+        addDefaultVar.otherVariablesTable.insertRow(0)
+        
+        # Loop over all arguments, inserting into rows
+        for col, value in enumerate(args):
+            # col is the column number, value is the value to set to
+            # Note that the values should be strings
+            item = QTableWidgetItem(toStr(value))
+            addDefaultVar.otherVariablesTable.setItem(0,col, item)
+            
+        # Re-enable sorting
+        addDefaultVar.otherVariablesTable.setSortingEnabled(True)
+        
     def run(self):
             """
             Runs the collect routine. Currently the python pyxpad part has to collect seperatly to the GUI features which is
             why all the imports have to happen twice. This is slow so have a thread - also adds stability. Sleep functions
             mean prevents all commands from being executed simulateously which crahses the system. 
             """
+            window.variableCombo.clear()
+            window.extraVarsCombo.clear()
+            datapath = re.sub('/BOUT.inp', '', loadpath1)
+            os.chdir(datapath)
+            #change directory to path
             window.textOutput.ensureCursorVisible()
             window.dataTable.clearContents()
             window.dataTable.setRowCount(0)
             window.data = {}  # resets the data stored in pyxpad as multiple collects would cause a crash otherwise.
+
+            # load data file 
+            d = DataFile('BOUT.dmp.0.nc')
+
+            # create a list of keys in the data file
+            d.keys()
+
+            # want all the keys that contain 4 dimensions
+            varLst = []
+            for v in d.keys():
+                    if d.ndims(v)==4: # counts dimensions
+                             varLst.append(v)
+                             
             os.chdir(self.path)
             window.commandEntered('from boutdata import collect')
             sleep(0.1)    # stops simulataneous commands
             window.commandEntered('from boututils import plotdata')
             sleep(0.1)
-            window.commandEntered('global p, ne, nvi, nn, nvn, pn, finalpath')
-            window.commandEntered('p = collect("P")')
-            sleep(0.1)
-            window.commandEntered('ne = collect("Ne")')
-            sleep(0.1)
-            window.commandEntered('nvi = collect("Nvi")')
-            sleep(0.1)
-            window.commandEntered('nn = collect("Nn")')
-            sleep(0.1)
-            window.commandEntered('temp = 0.5*p/ne')
-            sleep(0.1)
-            window.commandEntered('nvn = collect("NVn")')
-            sleep(0.1)
-            window.commandEntered('pn = collect("Pn")')
-            sleep(0.1)
+            os.chdir(self.path)
+            
+            # the defaults are stored in the config file
+            global defaultLst
+            defaultLst =  position.get('defaultVars', 'vars')
+            
+            def getlist(option, sep=',', chars=None):
+                """Return a list from a ConfigParser option. By default, 
+                   split on a comma and strip whitespaces."""
+                return [ chunk.strip(chars) for chunk in option.split(sep) ]
+
+            defaultLst = getlist(defaultLst)
+
+            # collects for command line
+            for var in varLst:
+                    # checks if default list to all the 4D variable and then collects
+                    if var in defaultLst:
+                          window.commandEntered(str(var.strip(',.').lower())+ '= collect(' +'"'+str(var)+ '"' + ')')
+                          sleep(0.1)
+                          
+            # temp was something I needed for SOL1D so it was automated
+            if 'P' and 'Ne' in varLst:
+                window.commandEntered('temp = 0.5*p/ne')
+                sleep(0.1)
+
+            # collects for the GUI graphing    
             from boutdata import collect
-            global p, ne, nvi, nn, nvn, pn, temp
-            p = collect("P"); ne = collect("Ne"); nvi = collect("Nvi"); nn = collect("Nn"); temp = 0.5*p/ne
-            nvn = collect("NVn"); pn = collect("Pn")
+            global varDic, plotLst, notLoadedLst
+            varDic = {}
+            plotLst = []
+            notLoadedLst = []
+            
+            
+            # does the same as before but appends all data to a dictionary of variables
+            for var in varLst:
+                    # adds to combo for graphing and collects
+                    if var in defaultLst:
+                        plotLst.append(var)
+                        window.variableCombo.addItem(var)
+                        a = collect(str(var))
+                        varDic[var] = a
+
+                    else:
+                      # adds to combo of other variables
+                        window.extraVarsCombo.addItem(var)
+                        notLoadedLst.append(var)
+                        self.insertTableRow(var)
+                        sleep(0.01)
+                        
+                        
+
+            # sets the label onscreen with the folder path of collection 
             window.collectedLabel.setText(str(self.path))
             self.exit()
+
+            
 
 ####################################### NEW CLASS #######################################
 
@@ -374,6 +445,10 @@ class MainWindow(QtGui.QMainWindow, Ui_MainWindow):
             self.archivePath.setText(archive)
         if os.path.isfile(codeFile):
             self.simulationFile.setText(codeFile)
+
+        ###################################################
+        # allows the user to change the file path of the simlation code
+        self.collectExtraVariable.clicked.connect(self.collectExtra)
         
         ###################################################
         # allows the user to change the file path of the simlation code
@@ -433,13 +508,7 @@ class MainWindow(QtGui.QMainWindow, Ui_MainWindow):
         # collect data
         self.pushButton_7.clicked.connect(self.collectit)
         
-        ###################################################
-        # get value
-        self.valueButton.clicked.connect(self.value)
 
-        ###################################################
-        # divide 
-        self.divideByButton.clicked.connect(self.divide)
 
         ###################################################
         # runScan
@@ -460,6 +529,10 @@ class MainWindow(QtGui.QMainWindow, Ui_MainWindow):
         ###################################################
         # create an example folder in the archive folder
         self.actionCreate_Example.triggered.connect(self.createInitial)
+
+        ###################################################
+        # create an example folder in the archive folder
+        self.actionDefault_Variables.triggered.connect(self.show_Variables)
         
         ###################################################
         # if restart is checked locks in number of processor to use
@@ -468,6 +541,40 @@ class MainWindow(QtGui.QMainWindow, Ui_MainWindow):
         ###################################################
         # set niceness default
         self.niceSpin.setValue(10)
+
+        ###################################################
+        # disable/ enable plotting spin boxes for t, x, y, z
+        self.tall.stateChanged.connect(self.disablet)
+        self.xall.stateChanged.connect(self.disablex)
+        self.yall.stateChanged.connect(self.disabley)
+        self.zall.stateChanged.connect(self.disablez)
+
+    def show_Variables(self):
+        addDefaultVar.show()
+
+    def collectExtra(self):
+        """
+        allows collection of non-default variables from the current model. Click on the collect variable button. Adds and collects selected variable
+        to the other variables that were previously collect. Removes from the extra variables lists and combo box. 
+        """
+        # import the data stores created in workercollect
+        global notLoadedLst, varDic, plotLst
+        from boutdata import collect
+        #find the currently selected variable
+        i = self.extraVarsCombo.currentIndex()
+        var = notLoadedLst[i]
+        del notLoadedLst[i]
+        # add to new and remvoe from old
+        self.variableCombo.addItem(var)
+        self.extraVarsCombo.removeItem(i)
+        # so on the list of variables that can be plotted
+        plotLst.append(var)
+        # gui collect
+        a = collect(str(var))
+        varDic[var] = a
+        # command line collect
+        window.commandEntered(str(var.strip(',.').lower())+ '= collect(' +'"'+str(var)+ '"' + ')')
+     
 
     def disableProc(self):
         """
@@ -486,6 +593,33 @@ class MainWindow(QtGui.QMainWindow, Ui_MainWindow):
             self.procSpin.setEnabled(True)
 
         # the if not statement looks to see if the current archive is a folder and prompts the user to select one if not on initialisation
+        
+    def disablet(self):
+        if self.tall.isChecked() == True:
+            self.tspin.setEnabled(False)
+        else:
+            self.tspin.setEnabled(True)
+        
+    def disablex(self):
+        if self.xall.isChecked() == True:
+            self.xspin.setEnabled(False)
+        else:
+            self.xspin.setEnabled(True)      
+
+        
+    def disabley(self):
+        if self.yall.isChecked() == True:
+            self.yspin.setEnabled(False)
+        else:
+            self.yspin.setEnabled(True)      
+
+        
+    def disablez(self):
+        if self.zall.isChecked() == True:
+            self.zspin.setEnabled(False)
+        else:
+            self.zspin.setEnabled(True)      
+            
             
     def createInitial(self):
 ##        """"
@@ -535,8 +669,10 @@ class MainWindow(QtGui.QMainWindow, Ui_MainWindow):
 ####################################### AUTOMATIC CREATION OF INPUTS STARTS ######################################
     def updateControls(self, inpfile):
         global inputsLst, sectionLst, inputsTupLst, groupbox, parser, tups
-        
-        #self.delete()
+        try:
+            self.delete()
+        except RuntimeError:
+            pass
         inputsLst = []
         sectionLst = []
         inputsTupLst = []
@@ -584,6 +720,8 @@ class MainWindow(QtGui.QMainWindow, Ui_MainWindow):
                     try:
                         float(value)
                         if float(value) > 1000000:
+                            self.createLine(n , subkey, value, section)
+                        elif float(value) < 0.01:
                             self.createLine(n , subkey, value,section)
                         else:
                             self.createDoubleSpin(n , subkey, value, section)
@@ -593,10 +731,12 @@ class MainWindow(QtGui.QMainWindow, Ui_MainWindow):
                         else:
                             self.createLine(n , subkey, value, section)
                 n = n + 1   # the n count is used so that each succesivly created input is created a factor n pixels lower than the previous
+            mycode = 'self.' + section + '.setLayout(self.' + str(section) + 'Grid)'
+            exec mycode
 
 
     def rearrange(self):
-        global leftBorder, topBorder, verticalSeperation, maxLength, boxWidth, horizontalSeperation
+        global leftBorder, topBorder, verticalSeperation, maxLength, boxWidth, horizontalSeperation, boxLength
         """
         The groupbox list contains the names of all the group boxes and the length of the inputs in that section, stored as a list of tuples,
         it then works out the best arrangement for these by finding frames of sizes that add together to a defined limit,
@@ -604,6 +744,7 @@ class MainWindow(QtGui.QMainWindow, Ui_MainWindow):
         so that they are distributed evenly and made a length comparable to the inputs within them. 
         """
         groupbox2 = groupbox
+        global n    
         n = 0
         while len(groupbox2) > 0:
             k = 0
@@ -617,14 +758,46 @@ class MainWindow(QtGui.QMainWindow, Ui_MainWindow):
                     total = self.total(newLst)
                     del groupbox2[i-k]
                     k = k + 1   #this k makes up for a deleted value
-            length = 0
+
             m = 0
-            for obj in newLst:      # for the group of good length they are sorted
-                mycode = 'self.' + obj[0] + '.setGeometry(QtCore.QRect(leftBorder + horizontalSeperation*n, length + verticalSeperation*m + topBorder, boxWidth, obj[1]))'     
+
+            mycode = 'self.scrolllayout' + str(n) +  '= QtGui.QGridLayout()'
+            exec mycode
+            mycode = 'self.scrollwidget' + str(n) + '= QtGui.QWidget()'
+            exec mycode
+            mycode = 'self.scrollwidget' + str(n) + '.setLayout(self.scrolllayout' + str(n) + ')'
+            exec mycode
+            mycode = 'self.scroll' + str(n) + '= QtGui.QScrollArea(self.tab_2)'
+            exec mycode
+            mycode = 'self.scroll' + str(n) + '.setWidgetResizable(True)'
+            exec mycode # Set to make the inner widget resize with scroll area
+            mycode = 'self.scroll' + str(n) + '.setWidget(self.scrollwidget' + str(n) +')'
+            exec mycode
+            mycode = 'self.scroll' + str(n) + '.setGeometry(QtCore.QRect(leftBorder + horizontalSeperation*n, topBorder, boxWidth+ 30, total + verticalSeperation * len(newLst) + 30 * len(newLst)))'
+            exec mycode
+            mycode = 'self.scroll' + str(n) + '.setMaximumHeight(boxLength)'
+            exec mycode
+            mycode = 'self.scroll' + str(n) + '.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOn)'
+            exec mycode
+
+            #container widget
+            self.widget = QWidget()
+            #layout of container
+            self.grid = QtGui.QGridLayout()
+            self.grid.setVerticalSpacing(verticalSeperation)
+            for obj in newLst:
+                
+                mycode = 'self.grid.addWidget(self.' + obj[0] + ',m ,0)'
                 exec mycode
-                length = length + int(obj[1])   # length means length of previous frame, so current frame is positioned after it
+               
                 m = m+1
+                
+            self.widget.setLayout(self.grid)    
+            mycode = 'self.scrolllayout' + str(n) + '.addWidget(self.widget,0,0)'
+            exec mycode
             n = n +1
+       
+
 
             
     def total(self, Lst):
@@ -645,12 +818,29 @@ class MainWindow(QtGui.QMainWindow, Ui_MainWindow):
         for item in inputsLst:
           mycode = 'self.' + item + '.deleteLater()'
           exec mycode
-          fg = 3
+
 
         for section in sections:
           objectName = section
           mycode = 'self.' + objectName + '.deleteLater()'
           exec mycode
+          mycode = 'self.' + objectName + 'Grid.deleteLater()'
+          exec mycode
+          
+        try:
+            for n in range(1000):
+                mycode = 'self.scrolllayout' + str(n) + '.deleteLater()'
+                exec mycode
+                mycode = 'self.scrollwidget' + str(n) + '.deleteLater()'
+                exec mycode
+                mycode = 'self.scroll' + str(n) + '.deleteLater()'
+                exec mycode
+        except AttributeError:
+            pass
+
+          
+          
+          
 
     def createGroupBox(self, section, y):
         """
@@ -659,12 +849,18 @@ class MainWindow(QtGui.QMainWindow, Ui_MainWindow):
         global sepInput
         objectName = section
         sectionLst.append(sectionLst)
-        ylength = 28 + y *sepInput    # finds the length of all the input controls in this section
+        ylength = 28 + y *21    # finds the length of all the input controls in this section
         mycode = 'self.' + objectName + ' = QtGui.QGroupBox(self.tab_2)'
         exec mycode
         mycode = 'self.' + objectName + '.setGeometry(QtCore.QRect(10, 10, 210, ylength))'  # rearrange function called later, these values are just placeholders
         exec mycode
         mycode = 'self.' + objectName + ' .setTitle(QtGui.QApplication.translate("MainWindow", section, None, QtGui.QApplication.UnicodeUTF8))'
+        exec mycode
+        mycode = 'self.' + objectName + 'Grid'+ '= QtGui.QGridLayout()'
+        exec mycode
+        mycode = 'self.' + objectName + 'Grid.setColumnStretch(0,1)'
+        exec mycode
+        mycode = 'self.' + objectName + 'Grid.setColumnStretch(1,0.1)'
         exec mycode
         tup = (section, ylength)    #this list of tuples is used later to reorganise position
         groupbox.append(tup)
@@ -692,11 +888,12 @@ class MainWindow(QtGui.QMainWindow, Ui_MainWindow):
         exec mycode
         mycode = 'self.' + objectName + '.setObjectName(objectName)'
         exec mycode
-        mycode =  'self.' + objectName + '.setGeometry(QtCore.QRect(xInput, sepInput*n, 100, 22))'
+        mycode =  'self.' + section + 'Grid' + '.addWidget(self.' + objectName + ',' + str(n) + ',1)'
         exec mycode
         mycode = 'self.label = QtGui.QLabel(self.' +section + ')'
         exec mycode
-
+        mycode =  'self.' + section + 'Grid' + '.addWidget(self.label,' + str(n) + ',0)'
+        exec mycode
         # adds an automatic tooltip based on the comments in the control file
         for i in range(len(tups)):
             line = tups[i][0].split()[0]
@@ -706,10 +903,11 @@ class MainWindow(QtGui.QMainWindow, Ui_MainWindow):
                   mycode = 'self.' +objectName + '.setToolTip(tooltip)'
                   exec mycode     
         #labels
-        self.label.setGeometry(QtCore.QRect(xLabel, sepInput*n, labelWidth, 15))
+
         self.label.setObjectName("label_n")
         self.label.setText(QtGui.QApplication.translate("MainWindow", subkey, None, QtGui.QApplication.UnicodeUTF8))
-
+        mycode = 'self.' + section + 'Grid' + '.setVerticalSpacing(sepInput)'
+        exec mycode
 
     def createTorF(self, n, subkey, value, section):
         """
@@ -728,9 +926,11 @@ class MainWindow(QtGui.QMainWindow, Ui_MainWindow):
         exec mycode
         mycode = 'self.' + objectName + '.setObjectName(objectName)'
         exec mycode
-        mycode =  'self.' + objectName + '.setGeometry(QtCore.QRect(xInput, sepInput*n, 100, 22))'
+        mycode =  'self.' + section + 'Grid' + '.addWidget(self.' + objectName + ',' + str(n) + ',1)'
         exec mycode
         mycode = 'self.label = QtGui.QLabel(self.' +section + ')'
+        exec mycode
+        mycode =  'self.' + section + 'Grid' + '.addWidget(self.label,' + str(n) + ',0)'
         exec mycode
         if value == 'true':
             mycode = 'self.' + objectName + '.setCurrentIndex(0)'
@@ -748,10 +948,11 @@ class MainWindow(QtGui.QMainWindow, Ui_MainWindow):
                   mycode = 'self.' +objectName + '.setToolTip(tooltip)'
                   exec mycode            
         #labels
-        self.label.setGeometry(QtCore.QRect(xLabel, sepInput*n, labelWidth, 15))
         self.label.setObjectName("label_n")
         self.label.setText(QtGui.QApplication.translate("MainWindow", subkey, None, QtGui.QApplication.UnicodeUTF8))
-            
+        mycode = 'self.' + section + 'Grid' + '.setVerticalSpacing(sepInput)'
+        exec mycode
+        
     def createBox(self, n, subkey, value, section):
         """
         creates a new spin box for each input item that is an integer. 
@@ -773,9 +974,11 @@ class MainWindow(QtGui.QMainWindow, Ui_MainWindow):
         exec mycode
         mycode = 'self.' + objectName + '.setObjectName(objectName)'
         exec mycode
-        mycode =  'self.' + objectName + '.setGeometry(QtCore.QRect(xInput, sepInput*n, 100, 22))'
+        mycode =  'self.' + section + 'Grid.addWidget(self.' + objectName + ',' + str(n) + ',1)'
         exec mycode
         mycode = 'self.label = QtGui.QLabel(self.' +section + ')'
+        exec mycode
+        mycode =  'self.' + section + 'Grid' + '.addWidget(self.label,' + str(n) + ',0)'
         exec mycode
         
         # adds an automatic tooltip based on the comments in the control file
@@ -787,10 +990,10 @@ class MainWindow(QtGui.QMainWindow, Ui_MainWindow):
                   mycode = 'self.' +objectName + '.setToolTip(tooltip)'
                   exec mycode     
         # labels
-        self.label.setGeometry(QtCore.QRect(xLabel, sepInput*n, labelWidth, 15))
         self.label.setObjectName("label_n")
         self.label.setText(QtGui.QApplication.translate("MainWindow", subkey, None, QtGui.QApplication.UnicodeUTF8))
-        
+        mycode = 'self.' + section + 'Grid' + '.setVerticalSpacing(sepInput)'
+        exec mycode        
 
         
     def createLine(self, n, subkey, value, section):
@@ -803,15 +1006,18 @@ class MainWindow(QtGui.QMainWindow, Ui_MainWindow):
         tup = (section, objectName)
         inputsTupLst.append(tup)
         mycode = 'self.' + objectName + ' = QtGui.QLineEdit(self.' + section + ')'
-        exec mycode   
-        mycode =  'self.' + objectName + '.setGeometry(QtCore.QRect(xInput, sepInput*n, 100, 22))'
-        exec mycode        
+        exec mycode          
         mycode = 'self.' + objectName + '.setObjectName(objectName)'
         exec mycode        
         mycode = 'self.' + objectName + '.setText( str(value))'
         exec mycode
+        mycode =  'self.' + section + 'Grid' + '.addWidget(self.' + objectName + ',' + str(n) + ',1)'
+        exec mycode
         mycode = 'self.label = QtGui.QLabel(self.' +section + ')'
         exec mycode
+        mycode =  'self.' + section + 'Grid' + '.addWidget(self.label,' + str(n) + ',0)'
+        exec mycode
+
         
         # adds an automatic tooltip based on the comments in the control file
         for i in range(len(tups)):
@@ -822,10 +1028,10 @@ class MainWindow(QtGui.QMainWindow, Ui_MainWindow):
                   mycode = 'self.' +objectName + '.setToolTip(tooltip)'
                   exec mycode                     
         # labels
-        self.label.setGeometry(QtCore.QRect(xLabel, sepInput*n, labelWidth, 15))
         self.label.setObjectName("label_n")
         self.label.setText(QtGui.QApplication.translate("MainWindow", subkey, None, QtGui.QApplication.UnicodeUTF8))
-
+        mycode = 'self.' + section + 'Grid' + '.setVerticalSpacing(sepInput)'
+        exec mycode
     def saveSettings(self, path):
 
         """
@@ -867,7 +1073,7 @@ class MainWindow(QtGui.QMainWindow, Ui_MainWindow):
         try:
             os.killpg(proc.pid, signal.SIGINT)
         except OSError:
-            proc.terminate()
+            pass
       
       
     def changerun(self):
@@ -1103,6 +1309,7 @@ class MainWindow(QtGui.QMainWindow, Ui_MainWindow):
         
         glob = globals()
         glob['plot'] = self.DataPlot.plotdata
+        glob['variables'] = self.showVariables
         # Evaluate the command, catching any exceptions
         # Local scope is set to self.data to allow access to user data
         self.runSandboxed(self._runExec, args=(cmd, glob, self.data))
@@ -1110,6 +1317,26 @@ class MainWindow(QtGui.QMainWindow, Ui_MainWindow):
         
 ############################################## COMMAND LINE CODE ENDS ############################################
 ##################################################################################################################
+
+    def showVariables(self):
+          """
+          shows all the 4D variables
+          """
+          # path of folder containing data files
+          path = re.sub('/BOUT.inp', '', loadpath1)
+          #change directory to path
+          os.chdir(path)
+
+          # load data file 
+          d = DataFile('BOUT.dmp.0.nc')
+
+          # create a list of keys in the data file
+          d.keys()
+
+          # want all the keys that contain 4 dimensions
+          for v in d.keys():
+                  if d.ndims(v)==4:
+                           print v
 
     def collectit(self):
       """
@@ -1185,9 +1412,9 @@ class MainWindow(QtGui.QMainWindow, Ui_MainWindow):
         except RuntimeError:
             pass
                       
-        global loadpath1, loadpath2
+        global loadpath1, loadpath2, procNumber
         try:
-            global procNumber
+          
             procNumber = int(self.tableWidget.item(x,3).text())
         except ValueError:
             procNumber = 5
@@ -1434,26 +1661,6 @@ class MainWindow(QtGui.QMainWindow, Ui_MainWindow):
         if not self.worker2.isRunning():
             self.worker2.exiting= False
             self.worker2.start()
-
-    def variable(self):     
-        if self.variableCombo.currentIndex() == 0:
-            variable = ne
-
-        if self.variableCombo.currentIndex() == 1:
-            variable = nvi
-            
-        if self.variableCombo.currentIndex() == 2:
-            variable = p
-            
-        if self.variableCombo.currentIndex() == 3:
-            variable = nn
-            
-        if self.variableCombo.currentIndex() == 4:
-            variable = nvn
-            
-        if self.variableCombo.currentIndex() == 5:
-            variable = pn        
-        return variable
 
     def value(self):
         """
@@ -2007,6 +2214,11 @@ class resize(QtGui.QMainWindow, Ui_Resize):
         Initialisation routine
         """
         # These calls set up the window
+    def __init__(self, parent=None):
+        """
+        Initialisation routine
+        """
+        # These calls set up the window
         super(resize, self).__init__(parent)
         self.setupUi(self)
 
@@ -2017,10 +2229,8 @@ class resize(QtGui.QMainWindow, Ui_Resize):
         self.maxSpin.setValue(int(position.get('appearance', 'maxlength')))
         self.widthSpin.setValue(int(position.get('appearance', 'boxwidth')))
         self.hSpin.setValue(int(position.get('appearance', 'horizontalseperation')))
-        self.labelxSpin.setValue(int(position.get('appearance', 'xlabel')))
-        self.inputxSpin.setValue(int(position.get('appearance', 'xinput')))
-        self.labelWidthSpin.setValue(int(position.get('appearance', 'labelwidth')))
         self.inputSepSpin.setValue(int(position.get('appearance', 'sepinput')))
+        self.boxLengthSpin.setValue(int(position.get('appearance', 'boxlength')))
 
         # changes the config file that has been read into the system
         self.leftSpin.valueChanged.connect(lambda: position.set('appearance', 'leftborder',self.leftSpin.value()))
@@ -2029,10 +2239,8 @@ class resize(QtGui.QMainWindow, Ui_Resize):
         self.maxSpin.valueChanged.connect(lambda: position.set('appearance', 'maxlength',self.maxSpin.value()))
         self.widthSpin.valueChanged.connect(lambda: position.set('appearance', 'boxwidth',self.widthSpin.value()))
         self.hSpin.valueChanged.connect(lambda: position.set('appearance', 'horizontalseperation',self.hSpin.value()))
-        self.labelxSpin.valueChanged.connect(lambda: position.set('appearance', 'xlabel',self.labelxSpin.value()))
-        self.inputxSpin.valueChanged.connect(lambda: position.set('appearance', 'xinput',self.inputxSpin.value()))
-        self.labelWidthSpin.valueChanged.connect(lambda: position.set('appearance', 'labelwidth',self.labelWidthSpin.value()))
         self.inputSepSpin.valueChanged.connect(lambda: position.set('appearance', 'sepinput',self.inputSepSpin.value()))
+        self.boxLengthSpin.valueChanged.connect(lambda: position.set('appearance', 'boxlength',self.boxLengthSpin.value()))
 
         #  configures the button box
         self.ok.clicked.connect(self.updateConfig)
@@ -2054,20 +2262,19 @@ class resize(QtGui.QMainWindow, Ui_Resize):
         """
         Updates the positions of the boxes and inputs in the inputs tab taknig into account the changes to the control file that have been made. 
         """
-        global leftBorder, verticalSeperation, topBorder, maxLength, boxWidth, horizontalSeperation, xLabel, xInput, labelWidth, sepInput, loadpath1
+        global leftBorder, verticalSeperation, topBorder, maxLength, boxWidth, horizontalSeperation, xLabel, xInput, labelWidth, sepInput, loadpath1, boxLength
         with open(config) as fp:
             position = configparser.ConfigParser()
             position.optionxform = str
             position.readfp(fp)
+            
         leftBorder = int(position.get('appearance', 'leftborder'))
         verticalSeperation = int(position.get('appearance', 'verticalseperation'))
         topBorder = int(position.get('appearance', 'topborder'))
         maxLength = int(position.get('appearance', 'maxlength'))
         boxWidth = int(position.get('appearance', 'boxwidth'))
         horizontalSeperation = int(position.get('appearance', 'horizontalseperation'))
-        xLabel = int(position.get('appearance', 'xlabel'))
-        xInput = int(position.get('appearance', 'xinput'))
-        labelWidth = int(position.get('appearance', 'labelwidth'))
+        boxLength = int(position.get('appearance', 'boxlength'))
         sepInput = int(position.get('appearance', 'sepinput'))
 
         # the only way to get changes made here to appear on screen is to 'change tabs'.
@@ -2075,10 +2282,10 @@ class resize(QtGui.QMainWindow, Ui_Resize):
         window.tabWidget.setCurrentIndex(0)
 
         if loadpath1 == 'empty':
-             window.delete()
+             #window.delete()
              window.updateControls(loadpath)
         else:
-             window.delete()
+             #window.delete()
              loadpath1 = re.sub('/BOUT.inp', '', loadpath1)
              window.updateControls(loadpath1 + '/BOUT.inp')
         # return to original tab
@@ -2113,8 +2320,80 @@ class dialogSimulation(QtGui.QMainWindow, Ui_dialogSimulation):
         if os.path.isfile(codeFile):
             window.simulationFile.setText(codeFile)
         
+####################################### NEW CLASS #######################################
+
+class addDefaultVar(QtGui.QMainWindow, Ui_addDefaultVar):
+    """
+    This class represents the main window
+    which inherits from Qt's QMainWindow and from
+    the class defined in mainwindow (called Ui_MainWindow)
+    """
+    def __init__(self, parent=None):
+        """
+        Initialisation routine
+        """
+        # These calls set up the window
+        super(addDefaultVar, self).__init__(parent)
+        self.setupUi(self)
+        self.addToTable()
+        self.addVariableButton.clicked.connect(self.add)
         
+    def insertTableRow(self, *args):
+        """
+        Inserts a row into the table at row 0
+        The inputs to this function will be inserted in order as
+        columns in this new row. Need one of these functions for each table. 
+        """
+        # First disable sorting, so table won't rearrange itself
+        self.variableTable.setSortingEnabled(False)
         
+        # Insert a row at 0, i.e. the top
+        self.variableTable.insertRow(0)
+        
+        # Loop over all arguments, inserting into rows
+        for col, value in enumerate(args):
+            # col is the column number, value is the value to set to
+            # Note that the values should be strings
+            item = QTableWidgetItem(toStr(value))
+            self.variableTable.setItem(0,col, item)
+            
+        # Re-enable sorting
+        self.variableTable.setSortingEnabled(True)
+        
+    def addToTable(self):
+
+        """
+        adds all the defaults stored in the config file to the table of default variables 
+        """
+        global defaultLst
+        defaultLst =  position.get('defaultVars', 'vars')
+        
+        def getlist(option, sep=',', chars=None):
+            """Return a list from a ConfigParser option. By default, 
+               split on a comma and strip whitespaces."""
+            return [ chunk.strip(chars) for chunk in option.split(sep) ]
+        
+        defaultLst = getlist(defaultLst)    
+        
+        for item in defaultLst:
+            self.insertTableRow(item)
+
+    def add(self):
+        global defaultLst
+        allVars = ''
+        variable = self.addVariable.text()
+        defaultLst.append(variable)
+        for var in defaultLst:
+            allVars = allVars + var + ','
+        defaultLst = allVars
+        
+        position.set('defaultVars', 'vars', defaultLst)
+        with open(config, 'w') as configfile:
+            position.write(configfile)
+        
+        self.insertTableRow(variable)
+
+
 
 if __name__ == "__main__":
     import sys
@@ -2123,7 +2402,6 @@ if __name__ == "__main__":
     app = QtGui.QApplication(sys.argv)
     
     # Create the window
-
     dialogSimulation = dialogSimulation()
     helpView = helpView()
     dialog = dialogsave()
@@ -2136,6 +2414,7 @@ if __name__ == "__main__":
     txthist = textdisplayhistory()
     scan = Scandialog()
     resize = resize()
+    addDefaultVar = addDefaultVar()
     # Run the application then exit    
     sys.exit(app.exec_())
     

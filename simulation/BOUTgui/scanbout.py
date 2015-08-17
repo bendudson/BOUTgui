@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 
-# Form implementation generated from reading ui file 'scanbout.ui'
+# Form implementation generated from reading ui file '../scanbout.ui'
 #
-# Created: Thu Aug 13 12:44:31 2015
+# Created: Mon Aug 17 16:20:43 2015
 #      by: pyside-uic 0.2.15 running on PySide 1.2.1
 #
 # WARNING! All changes made in this file will be lost!
@@ -126,7 +126,7 @@ class Ui_ScanDialog(object):
         self.label_8.setText(QtGui.QApplication.translate("ScanDialog", "Final Value 2", None, QtGui.QApplication.UnicodeUTF8))
         self.groupBox_2.setTitle(QtGui.QApplication.translate("ScanDialog", "Other Options", None, QtGui.QApplication.UnicodeUTF8))
         self.label_12.setText(QtGui.QApplication.translate("ScanDialog", "Increment:", None, QtGui.QApplication.UnicodeUTF8))
-        self.comboBox.setItemText(0, QtGui.QApplication.translate("ScanDialog", "Simulataneous Scan", None, QtGui.QApplication.UnicodeUTF8))
+        self.comboBox.setItemText(0, QtGui.QApplication.translate("ScanDialog", "Simultaneous Scan", None, QtGui.QApplication.UnicodeUTF8))
         self.comboBox.setItemText(1, QtGui.QApplication.translate("ScanDialog", "Full Scan", None, QtGui.QApplication.UnicodeUTF8))
         self.comboBox_2.setItemText(0, QtGui.QApplication.translate("ScanDialog", "Percentage", None, QtGui.QApplication.UnicodeUTF8))
         self.comboBox_2.setItemText(1, QtGui.QApplication.translate("ScanDialog", "Raw", None, QtGui.QApplication.UnicodeUTF8))
