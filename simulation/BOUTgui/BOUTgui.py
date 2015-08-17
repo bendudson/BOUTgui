@@ -36,6 +36,7 @@ import string
 # currentDir will always have the config files in it
 currentDir = os.getcwd()
 config = currentDir + '/config/config.ini'
+oldDir = currentDir
 
 # lists to hold infomation for automatic creation of inputs
 inputsLst = []
@@ -69,16 +70,6 @@ horizontalSeperation = int(position.get('appearance', 'horizontalseperation'))
 boxLength = int(position.get('appearance', 'boxlength'))
 sepInput = int(position.get('appearance', 'sepinput'))
 ########################################################################
-
-"""
-NOTE: BOUT.inp can not be passed through config parser unless it has a heading
-for all sections. A default heading has been added at the start with addTiming if ther
-isn't already a heading. This has to be removed for any simulations because BOUT++
-will not run with an additional heading. The removeTiming function is used later in
-the program for this, in the runbout and scanbout programs. It should also be noted that
-the config parser doesn't like headings with numbers in them so in non sol1d control files
-the 2fluid heading will need changing. This will at some point be automated. 
-"""
 
 archive = position.get('archive', 'path')
 codeFile = position.get('exe', 'path')
@@ -118,10 +109,9 @@ class Worker(QThread):
 
 
       def run(self):
+          # resets directory to dir of GUI
+          os.chdir(oldDir)
           # proc runs the simulation
-          global proc
-          # TRYING TO WORK OUT WHY YOU CAN'T RUN AFTER COLLECTING!!
-          print currentDir + '/runboutSim.py', str(self.path), str(self.restart), str(self.numProc), str(self.nice)
           proc = subprocess.Popen([currentDir + '/runboutSim.py', str(self.path), str(self.restart), str(self.numProc), str(self.nice)],
                                   shell = False, stdout = subprocess.PIPE, stderr = subprocess.PIPE, preexec_fn=os.setsid)
             
@@ -174,6 +164,8 @@ class scanWorker(QThread):
 
 
       def run(self):
+          # resets directory to dir of GUI
+          os.chdir(oldDir)
           # proc runs the simulation
           global proc
           proc = subprocess.Popen([currentDir + '/scanboutSim.py', str(self.path), str(self.key), str(self.subkey), str(self.initial), str(self.limit), str(self.increment), str(self.restart), str(self.incrementType), str(self.scanType), str(self.numProc), str(self.nice), str(self.initial2), str(self.limit2), str(self.key2),str(self.subkey2),str(self.increment2)],
