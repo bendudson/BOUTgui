@@ -13,6 +13,6 @@ Quick Installation Guide:
 
 4) Run the GUI by using ./BOUTgui.py once changed into the BOUTgui folder
 
-For help open the Installation and Running Guide (pdf) stored within the tar archive.
+**For help open the Installation and Running Guide (pdf) stored within the tar archive.**
 
 
