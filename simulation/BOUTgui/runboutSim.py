@@ -9,6 +9,7 @@ from guifunctions import *
 currentDir = os.getcwd()
 config = currentDir + '/config/config.ini'
 
+# get all the variables from either the arguments given when this code is run or from the config file
 parser = ConfigParser.ConfigParser()
 parser.read(config)
 exe = parser.get('exe', 'path')
@@ -19,7 +20,7 @@ runid = sys.argv[1] # First argument is the Archive ID to load
 restart = sys.argv[2]
 proc = sys.argv[3]
 nicelvl =sys.argv[4]
-    
+
 
 
 if nargs < 5:
@@ -29,7 +30,7 @@ if nargs < 5:
     print("     directory - optional, default is 'tmp'")
     sys.exit(1)
 
-# Unless an arguement is given a temporary folder is created to run in
+# Unless an argument is given a temporary folder is created to run in
 if nargs > 5:
     directory = sys.argv[3]
 else:
@@ -58,7 +59,7 @@ sourcedirectory = rundirectory(runid)
 
 
 
-# Inport inputs into the temporary directory ???
+# Import inputs into the temporary directory
 inputfiles = os.listdir(runid)
 for runfiles in inputfiles:
     filepath = os.path.join(runid, runfiles)

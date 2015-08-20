@@ -25,7 +25,7 @@ class Ui_dialogArchive(object):
         QtCore.QMetaObject.connectSlotsByName(dialogArchive)
 
     def retranslateUi(self, dialogArchive):
-        dialogArchive.setWindowTitle(QtGui.QApplication.translate("dialogArchive", "Dialog", None, QtGui.QApplication.UnicodeUTF8))
+        dialogArchive.setWindowTitle(QtGui.QApplication.translate("dialogArchive", "Choose Archive", None, QtGui.QApplication.UnicodeUTF8))
         self.pushButton.setText(QtGui.QApplication.translate("dialogArchive", "Ok", None, QtGui.QApplication.UnicodeUTF8))
         self.label.setText(QtGui.QApplication.translate("dialogArchive", "Please choose a folder to use as an archive", None, QtGui.QApplication.UnicodeUTF8))
 

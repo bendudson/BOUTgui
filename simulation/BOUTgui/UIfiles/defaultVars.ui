@@ -1,0 +1,180 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>addDefaultVar</class>
+ <widget class="QDialog" name="addDefaultVar">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>402</width>
+    <height>450</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>Edit default variables</string>
+  </property>
+  <widget class="QGroupBox" name="groupBox">
+   <property name="geometry">
+    <rect>
+     <x>20</x>
+     <y>263</y>
+     <width>361</width>
+     <height>141</height>
+    </rect>
+   </property>
+   <property name="title">
+    <string>Current Default Variable</string>
+   </property>
+   <widget class="QTableWidget" name="variableTable">
+    <property name="geometry">
+     <rect>
+      <x>4</x>
+      <y>15</y>
+      <width>351</width>
+      <height>121</height>
+     </rect>
+    </property>
+    <property name="toolTip">
+     <string>List of current defaults. Double click to remove from list. </string>
+    </property>
+    <attribute name="horizontalHeaderVisible">
+     <bool>false</bool>
+    </attribute>
+    <attribute name="horizontalHeaderCascadingSectionResizes">
+     <bool>false</bool>
+    </attribute>
+    <attribute name="horizontalHeaderHighlightSections">
+     <bool>false</bool>
+    </attribute>
+    <attribute name="horizontalHeaderMinimumSectionSize">
+     <number>100</number>
+    </attribute>
+    <attribute name="horizontalHeaderStretchLastSection">
+     <bool>true</bool>
+    </attribute>
+    <attribute name="verticalHeaderMinimumSectionSize">
+     <number>15</number>
+    </attribute>
+    <column>
+     <property name="text">
+      <string>Varaibles</string>
+     </property>
+    </column>
+   </widget>
+  </widget>
+  <widget class="QGroupBox" name="groupBox_2">
+   <property name="geometry">
+    <rect>
+     <x>20</x>
+     <y>98</y>
+     <width>361</width>
+     <height>161</height>
+    </rect>
+   </property>
+   <property name="title">
+    <string>Other Variables in this Model</string>
+   </property>
+   <widget class="QTableWidget" name="otherVariablesTable">
+    <property name="geometry">
+     <rect>
+      <x>4</x>
+      <y>15</y>
+      <width>351</width>
+      <height>141</height>
+     </rect>
+    </property>
+    <property name="toolTip">
+     <string>List of variables available. Double click to add to defaults.</string>
+    </property>
+    <attribute name="horizontalHeaderVisible">
+     <bool>false</bool>
+    </attribute>
+    <attribute name="horizontalHeaderMinimumSectionSize">
+     <number>100</number>
+    </attribute>
+    <attribute name="horizontalHeaderStretchLastSection">
+     <bool>true</bool>
+    </attribute>
+    <attribute name="verticalHeaderMinimumSectionSize">
+     <number>15</number>
+    </attribute>
+    <column>
+     <property name="text">
+      <string>Other Variables</string>
+     </property>
+    </column>
+   </widget>
+  </widget>
+  <widget class="QGroupBox" name="groupBox_3">
+   <property name="geometry">
+    <rect>
+     <x>20</x>
+     <y>10</y>
+     <width>361</width>
+     <height>81</height>
+    </rect>
+   </property>
+   <property name="title">
+    <string/>
+   </property>
+   <widget class="QLabel" name="label">
+    <property name="geometry">
+     <rect>
+      <x>0</x>
+      <y>0</y>
+      <width>371</width>
+      <height>81</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string> Add and remove variables to the default collect list by 
+ either typing in the bottom line or double clicking on the 
+ cell. Delete by double clicking in the lower box. 
+ 
+ Added variables do not have to be in the top box.</string>
+    </property>
+   </widget>
+  </widget>
+  <widget class="QLineEdit" name="addVariable">
+   <property name="geometry">
+    <rect>
+     <x>20</x>
+     <y>413</y>
+     <width>113</width>
+     <height>21</height>
+    </rect>
+   </property>
+   <property name="toolTip">
+    <string>Add variable by typing.</string>
+   </property>
+  </widget>
+  <widget class="QPushButton" name="addVariableButton">
+   <property name="geometry">
+    <rect>
+     <x>140</x>
+     <y>412</y>
+     <width>111</width>
+     <height>25</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Add Variable</string>
+   </property>
+  </widget>
+  <widget class="QPushButton" name="closeButton">
+   <property name="geometry">
+    <rect>
+     <x>270</x>
+     <y>412</y>
+     <width>111</width>
+     <height>25</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Close</string>
+   </property>
+  </widget>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>

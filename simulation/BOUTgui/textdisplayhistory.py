@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 
-# Form implementation generated from reading ui file './oldfiles/textdisplayhistory.ui'
+# Form implementation generated from reading ui file 'textdisplayhistory.ui'
 #
-# Created: Fri Jul 10 10:18:01 2015
+# Created: Tue Aug 18 12:42:10 2015
 #      by: pyside-uic 0.2.15 running on PySide 1.2.1
 #
 # WARNING! All changes made in this file will be lost!
@@ -47,7 +47,7 @@ class Ui_TextWindowHistory(object):
         QtCore.QMetaObject.connectSlotsByName(TextWindowHistory)
 
     def retranslateUi(self, TextWindowHistory):
-        TextWindowHistory.setWindowTitle(QtGui.QApplication.translate("TextWindowHistory", "MainWindow", None, QtGui.QApplication.UnicodeUTF8))
+        TextWindowHistory.setWindowTitle(QtGui.QApplication.translate("TextWindowHistory", "File History", None, QtGui.QApplication.UnicodeUTF8))
         self.textBrowser.setToolTip(QtGui.QApplication.translate("TextWindowHistory", "Text display of the current files history", None, QtGui.QApplication.UnicodeUTF8))
         self.pushButton.setToolTip(QtGui.QApplication.translate("TextWindowHistory", "Close window", None, QtGui.QApplication.UnicodeUTF8))
         self.pushButton.setText(QtGui.QApplication.translate("TextWindowHistory", "Exit", None, QtGui.QApplication.UnicodeUTF8))
