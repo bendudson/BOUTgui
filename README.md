@@ -7,13 +7,13 @@ The GUI was developed alongside a command line application with the aim to strea
 
 ## Quick Installation Guide:
 
-1) Download the tar archive from GitHub
-
-2) Un-tar into the chosen folder, e.g. tar xvzf BOUTgui.tar.gz /hwdisks/home/username/BOUTgui
-
-3) Can ignore all files except BOUTgui.py which is the main application file when running
-
-4) Run the GUI by using ./BOUTgui.py once changed into the BOUTgui folder
+1) Download the latest release as a taz from github at https://github.com/joe1510/BOUTgui/releases. 
+2) Go back to linux terminal and cd into Downloads
+3) Un-tar into the chosen folder, e.g. tar xvzf BOUTgui[VERSION].tar.gz
+![](https://github.com/joe1510/BOUTgui/blob/master/readme%20images/shell.png)
+4) cd into the untarred folder and use chmod to allow three scripts to be executable, BOUTgui.py, runboutSim.py and scanboutSim.py – chmod a+x FILE 
+5) All installation steps are finished. Run the GUI by typing ./BOUgui.py
+![](https://github.com/joe1510/BOUTgui/blob/master/readme%20images/shell1.png)
 
 **For help open the Installation and Running Guide (pdf) stored within the tar archive.**
 
