@@ -35,10 +35,9 @@ config = currentDir + '/config/config.ini'
 # read the config file
 parser = ConfigParser.ConfigParser()
 parser.read(config)
-# collect exe and archive and editor
+# collect exe and archive
 exe = parser.get('exe', 'path')
 archive = parser.get('archive', 'path')
-editor = parser.get('text editor', 'editor')
 MPIRUN = getmpirun()
 # find the number of arguments
 nargs = len(sys.argv)
