@@ -2047,6 +2047,10 @@ class MainWindow(QtGui.QMainWindow, Ui_MainWindow):
         A text browser is displayed as a pop up with all the differnt lines show. old lines are shown as a - and new as +
         """
         # read the two files
+        loadpath1 = re.sub('/BOUT.inp', '', loadpath1)
+        loadpath1 = loadpath1 + '/BOUT.inp'
+        loadpath2 = re.sub('/BOUT.inp', '', loadpath2)
+        loadpath2 = loadpath1 + '/BOUT.inp'
         with open(loadpath1, 'r') as sf1, open(loadpath2, 'r') as sf2:
             lineA = sf1.readlines()
             lineB = sf2.readlines()
