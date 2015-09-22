@@ -60,7 +60,7 @@ try:
     archive = os.environ["BOUTARCHIVE"]
 except KeyError:
     # No environment variable. Use default
-    archive = '/hwdisks/home/jh1479/BOUT-dev/archive/'
+    archive = currentDir
 
 # Checks for a valid archive ID
 def rundirectory(runid):   
